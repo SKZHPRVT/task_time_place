@@ -23,6 +23,7 @@ interface TelegramWebApp {
   close: () => void;
   setHeaderColor: (color: string) => void;
   setBackgroundColor: (color: string) => void;
+  setBottomBarColor?: (color: string) => void;
   enableClosingConfirmation: () => void;
   disableVerticalSwipes?: () => void;
   requestFullscreen?: () => void;

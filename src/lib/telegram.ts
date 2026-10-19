@@ -8,7 +8,6 @@ function safeCall<T>(fn: () => T): T | undefined {
 export function setHeaderColor(color: string): void {
   if (!tg) return;
   if (typeof tg.setHeaderColor === 'function') safeCall(() => tg.setHeaderColor(color));
-  // Меняем только CSS-переменную для #header-bg
   document.documentElement.style.setProperty('--app-header-color', color);
 }
 
@@ -20,6 +19,15 @@ export function initTelegram(): void {
     safeCall(() => tg.expand());
     if (typeof tg.requestFullscreen === 'function') safeCall(() => tg.requestFullscreen!());
     if (typeof tg.disableVerticalSwipes === 'function') safeCall(() => tg.disableVerticalSwipes!());
+
+    // 🆕 Нижняя панель (под клавиатурой) — всегда чёрная
+    if (typeof tg.setBottomBarColor === 'function') {
+      safeCall(() => tg.setBottomBarColor!('#000000'));
+    }
+    // 🆕 И цвет "фона" приложения (используется в некоторых местах)
+    if (typeof tg.setBackgroundColor === 'function') {
+      safeCall(() => tg.setBackgroundColor!('#000000'));
+    }
   });
 }
 
