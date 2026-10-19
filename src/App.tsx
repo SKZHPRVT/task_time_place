@@ -7,7 +7,6 @@ import { COLOR_PALETTE, darkenColor, lightenColor } from './utils/color';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function App() {
-  // Безопасно получаем цвет (если localStorage пуст, берем дефолтный #71717a)
   const [baseColor, setBaseColor] = useLocalStorage('clear_base_color', '#71717a');
   const [showPalette, setShowPalette] = useState(false);
   
@@ -46,14 +45,12 @@ export default function App() {
     setNewTaskText('');
   };
 
-  // Вычисляем цвета
   const headerBg = darkenColor(baseColor, 30);
   const taskBg = lightenColor(baseColor, 40);
   const doneTaskBg = '#3f3f46';
 
   return (
     <div className="min-h-screen flex flex-col bg-black overflow-hidden">
-      {/* Хедер */}
       <div 
         className="pt-16 pb-4 px-6 transition-colors duration-300 flex justify-between items-end"
         style={{ backgroundColor: headerBg }}
@@ -68,7 +65,6 @@ export default function App() {
         </button>
       </div>
 
-      {/* Палитра цветов */}
       <AnimatePresence>
         {showPalette && (
           <motion.div 
@@ -78,7 +74,7 @@ export default function App() {
             className="overflow-hidden bg-zinc-900 border-b border-zinc-800"
           >
             <div className="flex gap-3 px-6 py-4 overflow-x-auto">
-              {COLOR_PALETTE.map((c) => (
+              {COLOR_PALETTE.map((c: { name: string; hex: string }) => (
                 <button
                   key={c.hex}
                   onClick={() => {
@@ -96,7 +92,6 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Список задач */}
       <div className="flex-1 overflow-y-auto pb-24">
         {tasks.map(task => (
           <SwipeableTask
