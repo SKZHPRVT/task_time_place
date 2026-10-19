@@ -3,6 +3,7 @@ import { motion, useAnimation, PanInfo } from 'framer-motion';
 import { Bell, Check, X } from 'lucide-react';
 import { Task } from '../types';
 import { haptic } from '../lib/telegram';
+import { isLightColor } from '../utils/color';
 
 interface SwipeableTaskProps {
   task: Task;
@@ -35,10 +36,14 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate, onOpenRemind
 
   const bgColor = taskBg || (task.done ? '#3f3f46' : '#a1a1aa');
   const hasReminder = Boolean(task.reminder);
+  const light = isLightColor(bgColor);
+  const textColor = light ? 'text-zinc-900' : 'text-white';
+  const iconColor = light ? 'text-zinc-700' : 'text-white/40';
+  const iconActiveColor = light ? 'text-zinc-900' : 'text-white';
+  const timeColor = light ? 'text-zinc-600' : 'text-white/70';
 
   return (
-    <div className="relative overflow-hidden bg-black w-full">
-      {/* Иконки к краям при свайпе */}
+    <div className="relative overflow-hidden w-full" style={{ backgroundColor: '#000' }}>
       <div className="absolute inset-0 flex justify-between items-center">
         <div className="pl-2 h-full flex items-center">
           <Check size={28} className="text-green-500" strokeWidth={3} />
@@ -57,7 +62,6 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate, onOpenRemind
         style={{ backgroundColor: bgColor }}
         className="relative flex items-start px-3 py-4 border-b border-black/10 w-full"
       >
-        {/* Текст задачи */}
         <div className="flex-1 min-w-0 mr-3">
           {isEditing ? (
             <input
@@ -70,14 +74,14 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate, onOpenRemind
               onKeyDown={e => {
                 if (e.key === 'Enter') e.currentTarget.blur();
               }}
-              className={`bg-transparent outline-none w-full text-xl font-medium text-white ${
+              className={`bg-transparent outline-none w-full text-xl font-medium ${textColor} ${
                 task.done ? 'line-through opacity-60' : ''
               }`}
             />
           ) : (
             <div
               onClick={() => setIsEditing(true)}
-              className={`text-xl font-medium text-white break-words whitespace-pre-wrap ${
+              className={`text-xl font-medium break-words whitespace-pre-wrap ${textColor} ${
                 task.done ? 'line-through opacity-60' : ''
               }`}
             >
@@ -85,15 +89,11 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate, onOpenRemind
             </div>
           )}
 
-          {/* Таймер под текстом, если есть напоминание */}
           {task.reminder && !task.done && (
-            <div className="text-xs mt-1 text-white/70">
-              {formatReminder(task.reminder)}
-            </div>
+            <div className={`text-xs mt-1 ${timeColor}`}>{formatReminder(task.reminder)}</div>
           )}
         </div>
 
-        {/* Колокольчик — справа */}
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -106,7 +106,7 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate, onOpenRemind
         >
           <Bell
             size={20}
-            className={hasReminder && !task.done ? 'text-white' : 'text-white/40'}
+            className={hasReminder && !task.done ? iconActiveColor : iconColor}
             fill={hasReminder && !task.done ? 'currentColor' : 'none'}
           />
         </button>
@@ -124,7 +124,6 @@ function formatReminder(iso: string): string {
     if (diff < 60) return `через ${diff}м`;
     if (diff < 1440) return `через ${Math.round(diff / 60)}ч`;
     return (
-      '🔔 ' +
       d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) +
       ' ' +
       d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })

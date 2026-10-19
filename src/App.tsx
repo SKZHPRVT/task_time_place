@@ -4,7 +4,7 @@ import { ReminderSheet } from './components/ReminderSheet';
 import { Task } from './types';
 import { useAppState } from './hooks/useAppState';
 import { Palette } from 'lucide-react';
-import { COLOR_PALETTE, darkenColor, lightenColor } from './utils/color';
+import { COLOR_PALETTE, BG_PALETTE, getHeaderTaskColors } from './utils/color';
 import { motion, AnimatePresence } from 'framer-motion';
 import { setHeaderColor } from './lib/telegram';
 
@@ -15,8 +15,9 @@ export default function App() {
   const [newTaskText, setNewTaskText] = useState('');
   const [editingReminderId, setEditingReminderId] = useState<string | null>(null);
 
-  const headerBg = darkenColor(baseColor, 5);
-  const taskBg = lightenColor(baseColor, 5);
+  const colors = getHeaderTaskColors(baseColor);
+  const headerBg = colors.header;
+  const taskBg = colors.task;
 
   useEffect(() => {
     setHeaderColor(headerBg);
@@ -65,12 +66,10 @@ export default function App() {
   };
 
   const currentColor = paletteMode === 'base' ? baseColor : bgColor;
+  const currentPalette = paletteMode === 'base' ? COLOR_PALETTE : BG_PALETTE;
 
   return (
-    <div
-      className="flex-1 flex flex-col overflow-hidden"
-      style={{ backgroundColor: bgColor }}
-    >
+    <div className="flex-1 flex flex-col overflow-hidden" style={{ backgroundColor: bgColor }}>
       <div
         className="pb-4 px-6 transition-colors duration-300 flex justify-between items-end shrink-0"
         style={{ backgroundColor: headerBg }}
@@ -92,14 +91,11 @@ export default function App() {
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden bg-zinc-900 border-b border-zinc-800 shrink-0"
           >
-            {/* Переключатель: шапка/задачи vs фон */}
             <div className="flex gap-2 px-6 pt-4">
               <button
                 onClick={() => setPaletteMode('base')}
                 className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  paletteMode === 'base'
-                    ? 'bg-white text-black'
-                    : 'bg-zinc-800 text-zinc-400'
+                  paletteMode === 'base' ? 'bg-white text-black' : 'bg-zinc-800 text-zinc-400'
                 }`}
               >
                 Шапка и задачи
@@ -107,22 +103,20 @@ export default function App() {
               <button
                 onClick={() => setPaletteMode('bg')}
                 className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  paletteMode === 'bg'
-                    ? 'bg-white text-black'
-                    : 'bg-zinc-800 text-zinc-400'
+                  paletteMode === 'bg' ? 'bg-white text-black' : 'bg-zinc-800 text-zinc-400'
                 }`}
               >
                 Фон
               </button>
             </div>
 
-            {/* Палитра */}
             <div className="flex gap-3 px-6 py-4 overflow-x-auto">
-              {COLOR_PALETTE.map((c: { name: string; hex: string }) => (
+              {currentPalette.map((c) => (
                 <button
                   key={c.hex}
                   onClick={() => handlePaletteSelect(c.hex)}
-                  className={`w-10 h-10 rounded-full shrink-0 transition-transform active:scale-90 ${
+                  title={c.name}
+                  className={`w-10 h-10 rounded-full shrink-0 transition-transform active:scale-90 border border-white/10 ${
                     currentColor === c.hex ? 'ring-2 ring-white ring-offset-2 ring-offset-zinc-900' : ''
                   }`}
                   style={{ backgroundColor: c.hex }}
@@ -133,10 +127,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <div
-        className="flex-1 overflow-y-auto pb-24"
-        style={{ backgroundColor: bgColor }}
-      >
+      <div className="flex-1 overflow-y-auto pb-24" style={{ backgroundColor: bgColor }}>
         {sortedTasks.map(task => (
           <SwipeableTask
             key={task.id}
