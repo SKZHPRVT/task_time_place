@@ -13,18 +13,19 @@
 html, body {
   margin: 0;
   padding: 0;
-  /* html и body — всегда чёрные. Под клавиатурой не будет заливки. */
+  /* html/body чёрные. Не меняются при клавиатуре. */
   background-color: #000;
   color: #fff;
   overscroll-behavior: none;
   user-select: none;
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
-  height: var(--tg-viewport-height);
+  /* НЕ привязываемся к --tg-viewport-height, чтобы клавиатура не сжимала layout */
+  height: 100%;
   overflow: hidden;
 }
 
-/* Отдельный слой под системной зоной сверху — рисует цвет шапки */
+/* Слой под системной зоной сверху — рисует цвет шапки */
 #header-bg {
   position: fixed;
   top: 0;
@@ -34,17 +35,21 @@ html, body {
   background-color: var(--app-header-color);
   z-index: 0;
   pointer-events: none;
-  transition: background-color 0.3s;
 }
 
+/* #root фиксируется на весь экран, не сжимается клавиатурой */
 #root {
-  position: relative;
-  height: var(--tg-viewport-height);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
   padding-top: calc(var(--tg-safe-area-top) + var(--tg-content-safe-area-top) + 16px);
   background-color: transparent;
   z-index: 1;
+  overflow: hidden;
 }
 
 ::-webkit-scrollbar {
