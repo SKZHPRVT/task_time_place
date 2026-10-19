@@ -10,6 +10,13 @@ function applyViewportHeight(): void {
   document.documentElement.style.setProperty('--tg-viewport-height', `${h}px`);
 }
 
+// 🆕 Функция для смены цвета шапки Telegram
+export function setHeaderColor(color: string): void {
+  if (!tg) return;
+  safeCall(() => tg.setHeaderColor(color));
+  safeCall(() => tg.setBackgroundColor(color));
+}
+
 export function initTelegram(): void {
   if (!tg) {
     document.documentElement.style.setProperty('--tg-viewport-height', `${window.innerHeight}px`);
@@ -24,18 +31,12 @@ export function initTelegram(): void {
   safeCall(() => tg.ready());
   safeCall(() => tg.expand());
 
-  // requestFullscreen — опциональный метод, проверяем наличие перед вызовом
   if (typeof tg.requestFullscreen === 'function') {
     safeCall(() => tg.requestFullscreen!());
   }
-
-  // disableVerticalSwipes — опциональный метод
   if (typeof tg.disableVerticalSwipes === 'function') {
     safeCall(() => tg.disableVerticalSwipes!());
   }
-
-  safeCall(() => tg.setHeaderColor('#000000'));
-  safeCall(() => tg.setBackgroundColor('#000000'));
 
   applyViewportHeight();
 

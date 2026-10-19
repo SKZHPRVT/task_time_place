@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SwipeableTask } from './components/SwipeableTask';
 import { Task } from './types';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { Palette } from 'lucide-react';
 import { COLOR_PALETTE, darkenColor, lightenColor } from './utils/color';
 import { motion, AnimatePresence } from 'framer-motion';
+import { setHeaderColor } from './lib/telegram';
 
 export default function App() {
   const [baseColor, setBaseColor] = useLocalStorage('clear_base_color', '#71717a');
@@ -18,6 +19,15 @@ export default function App() {
   ]);
 
   const [newTaskText, setNewTaskText] = useState('');
+
+  const headerBg = darkenColor(baseColor, 7);
+  const taskBg = lightenColor(baseColor, 7);
+  const doneTaskBg = darkenColor(baseColor, 30);
+
+  // 🆕 Синхронизируем цвет шапки Telegram с цветом нашего хедера
+  useEffect(() => {
+    setHeaderColor(headerBg);
+  }, [headerBg]);
 
   const toggleTask = (id: string) => {
     setTasks(tasks.map(t => (t.id === id ? { ...t, done: !t.done } : t)));
@@ -45,13 +55,8 @@ export default function App() {
     setNewTaskText('');
   };
 
-  const headerBg = darkenColor(baseColor, 7);
-  const taskBg = lightenColor(baseColor, 7);
-  const doneTaskBg = darkenColor(baseColor, 30);
-
   return (
-    <div className="flex-1 flex flex-col bg-black overflow-hidden">
-      {/* Убрали pt-12, так как отступ теперь регулируется в #root */}
+    <div className="flex-1 flex flex-col overflow-hidden" style={{ backgroundColor: headerBg }}>
       <div
         className="pb-4 px-6 transition-colors duration-300 flex justify-between items-end shrink-0"
         style={{ backgroundColor: headerBg }}
@@ -92,7 +97,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <div className="flex-1 overflow-y-auto pb-24">
+      <div className="flex-1 overflow-y-auto pb-24 bg-black">
         {tasks.map(task => (
           <SwipeableTask
             key={task.id}
