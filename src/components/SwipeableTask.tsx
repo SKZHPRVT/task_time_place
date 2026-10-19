@@ -34,10 +34,11 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate, onOpenRemind
   };
 
   const bgColor = taskBg || (task.done ? '#3f3f46' : '#a1a1aa');
+  const hasReminder = Boolean(task.reminder);
 
   return (
     <div className="relative overflow-hidden bg-black w-full">
-      {/* Иконки прижаты к самым краям */}
+      {/* Иконки к краям при свайпе */}
       <div className="absolute inset-0 flex justify-between items-center">
         <div className="pl-2 h-full flex items-center">
           <Check size={28} className="text-green-500" strokeWidth={3} />
@@ -54,8 +55,27 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate, onOpenRemind
         onDragEnd={handleDragEnd}
         animate={controls}
         style={{ backgroundColor: bgColor }}
-        className="relative flex items-start justify-between px-3 py-4 border-b border-black/10 w-full"
+        className="relative flex items-start px-3 py-4 border-b border-black/10 w-full"
       >
+        {/* Иконка напоминания — всегда слева */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            haptic('light');
+            onOpenReminder?.(task.id);
+          }}
+          className="shrink-0 mr-3 mt-1 p-1"
+          style={{ WebkitTapHighlightColor: 'transparent' }}
+          aria-label="Напоминание"
+        >
+          <Bell
+            size={20}
+            className={hasReminder && !task.done ? 'text-white' : 'text-white/40'}
+            fill={hasReminder && !task.done ? 'currentColor' : 'none'}
+          />
+        </button>
+
+        {/* Текст задачи */}
         <div className="flex-1 min-w-0">
           {isEditing ? (
             <input
@@ -82,20 +102,14 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate, onOpenRemind
               {task.text || <span className="opacity-50">Новая задача</span>}
             </div>
           )}
-        </div>
 
-        {task.reminder && !task.done && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onOpenReminder?.(task.id);
-            }}
-            className="flex items-center gap-1 text-sm shrink-0 ml-3 mt-1 text-white"
-          >
-            <Bell size={16} />
-            <span>{formatReminder(task.reminder)}</span>
-          </button>
-        )}
+          {/* Таймер под текстом, если есть напоминание */}
+          {task.reminder && !task.done && (
+            <div className="text-xs mt-1 text-white/70">
+              🔔 {formatReminder(task.reminder)}
+            </div>
+          )}
+        </div>
       </motion.div>
     </div>
   );
@@ -109,7 +123,7 @@ function formatReminder(iso: string): string {
     if (diff < 0) return 'просрочено';
     if (diff < 60) return `через ${diff}м`;
     if (diff < 1440) return `через ${Math.round(diff / 60)}ч`;
-    return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+    return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
   } catch {
     return '';
   }
