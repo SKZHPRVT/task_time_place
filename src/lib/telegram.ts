@@ -10,11 +10,15 @@ function applyViewportHeight(): void {
   document.documentElement.style.setProperty('--tg-viewport-height', `${h}px`);
 }
 
-// 🆕 Функция для смены цвета шапки Telegram
 export function setHeaderColor(color: string): void {
   if (!tg) return;
-  safeCall(() => tg.setHeaderColor(color));
-  safeCall(() => tg.setBackgroundColor(color));
+  // Проверяем что метод существует
+  if (typeof tg.setHeaderColor === 'function') {
+    safeCall(() => tg.setHeaderColor(color));
+  }
+  if (typeof tg.setBackgroundColor === 'function') {
+    safeCall(() => tg.setBackgroundColor(color));
+  }
 }
 
 export function initTelegram(): void {
