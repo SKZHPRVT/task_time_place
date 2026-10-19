@@ -12,13 +12,12 @@ function applyViewportHeight(): void {
 
 export function setHeaderColor(color: string): void {
   if (!tg) return;
+  // ТОЛЬКО header — НЕ трогаем setBackgroundColor, иначе под клавиатурой будет заливка
   if (typeof tg.setHeaderColor === 'function') safeCall(() => tg.setHeaderColor(color));
-  if (typeof tg.setBackgroundColor === 'function') safeCall(() => tg.setBackgroundColor(color));
-  // Красим только html — это фон «за пределами» контента
+  
   document.documentElement.style.backgroundColor = color;
   document.documentElement.style.setProperty('--app-bg', color);
-  // body оставляем ЧЁРНЫМ — чтобы под клавиатурой не просвечивало
-  document.body.style.backgroundColor = '#000';
+  document.body.style.backgroundColor = color;
 }
 
 export function initTelegram(): void {

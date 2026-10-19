@@ -10,18 +10,10 @@
   --app-bg: #000;
 }
 
-html {
-  /* Фон html = цвет шапки (перекрашивается из JS при смене палитры) */
-  background-color: var(--app-bg);
-  height: var(--tg-viewport-height);
-  overflow: hidden;
-}
-
-body {
+html, body {
   margin: 0;
   padding: 0;
-  /* body всегда чёрный — под клавиатурой не будет цветной заливки */
-  background-color: #000;
+  background-color: var(--app-bg);
   color: #fff;
   overscroll-behavior: none;
   user-select: none;

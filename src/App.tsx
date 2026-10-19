@@ -40,13 +40,11 @@ export default function App() {
   const addTask = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTaskText.trim()) return;
-
     const newTask: Task = {
       id: Date.now().toString(),
       text: newTaskText.trim(),
       done: false,
     };
-
     updateTasks(prev => [newTask, ...prev]);
     setNewTaskText('');
   };
