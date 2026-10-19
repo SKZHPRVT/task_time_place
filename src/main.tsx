@@ -2,9 +2,10 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
-import { initTelegram } from './lib/telegram';
 
-initTelegram();
+// ВРЕМЕННО ОТКЛЮЧЕНО ДЛЯ ОТЛАДКИ
+// import { initTelegram } from './lib/telegram';
+// initTelegram();
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { error: Error | null }> {
   constructor(props: any) {
