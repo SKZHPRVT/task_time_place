@@ -4,6 +4,14 @@ import App from './App';
 import './index.css';
 import { initTelegram } from './lib/telegram';
 
+// 🧹 Очищаем старые битые ключи от предыдущих версий
+try {
+  const oldKeys = ['clear_tasks', 'clear_base_color', 'clear_first_launch', 'clear_app_state_v1', 'clear_app_state_v1_backup'];
+  oldKeys.forEach(k => localStorage.removeItem(k));
+} catch (e) {
+  console.warn('[Cleanup] failed:', e);
+}
+
 initTelegram();
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { error: Error | null }> {
