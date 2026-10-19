@@ -14,7 +14,7 @@ interface SwipeableTaskProps {
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, text: string) => void;
-  taskBg: string;
+  taskBg?: string;
 }
 
 export function SwipeableTask({ task, onToggle, onDelete, onUpdate, taskBg }: SwipeableTaskProps) {
@@ -37,6 +37,8 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate, taskBg }: Sw
     }
   };
 
+  const bgColor = taskBg || (task.done ? '#3f3f46' : '#a1a1aa');
+
   return (
     <div className="relative overflow-hidden bg-black w-full">
       <div className="absolute inset-0 flex justify-between items-center">
@@ -54,7 +56,7 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate, taskBg }: Sw
         dragElastic={0.2}
         onDragEnd={handleDragEnd}
         animate={controls}
-        style={{ backgroundColor: taskBg }}
+        style={{ backgroundColor: bgColor }}
         className="relative flex items-center justify-between px-6 py-4 border-b border-black/10 w-full"
       >
         {isEditing ? (
