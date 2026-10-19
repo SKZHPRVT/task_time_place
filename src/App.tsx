@@ -4,7 +4,7 @@ import { ReminderSheet } from './components/ReminderSheet';
 import { Task } from './types';
 import { useAppState } from './hooks/useAppState';
 import { Palette } from 'lucide-react';
-import { COLOR_PALETTE, BG_PALETTE, getHeaderTaskColors } from './utils/color';
+import { COLOR_PALETTE, getHeaderTaskColors, isLightColor } from './utils/color';
 import { motion, AnimatePresence } from 'framer-motion';
 import { setHeaderColor } from './lib/telegram';
 
@@ -66,7 +66,7 @@ export default function App() {
   };
 
   const currentColor = paletteMode === 'base' ? baseColor : bgColor;
-  const currentPalette = paletteMode === 'base' ? COLOR_PALETTE : BG_PALETTE;
+  const bgIsLight = isLightColor(bgColor);
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden" style={{ backgroundColor: bgColor }}>
@@ -111,7 +111,7 @@ export default function App() {
             </div>
 
             <div className="flex gap-3 px-6 py-4 overflow-x-auto">
-              {currentPalette.map((c) => (
+              {COLOR_PALETTE.map((c) => (
                 <button
                   key={c.hex}
                   onClick={() => handlePaletteSelect(c.hex)}
@@ -146,7 +146,9 @@ export default function App() {
             value={newTaskText}
             onChange={e => setNewTaskText(e.target.value)}
             placeholder="+ Новая задача"
-            className="w-full bg-transparent text-zinc-400 text-xl outline-none placeholder-zinc-600"
+            className={`w-full bg-transparent text-xl outline-none ${
+              bgIsLight ? 'text-zinc-700 placeholder-zinc-500' : 'text-zinc-400 placeholder-zinc-600'
+            }`}
           />
         </form>
       </div>
