@@ -57,26 +57,8 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate, onOpenRemind
         style={{ backgroundColor: bgColor }}
         className="relative flex items-start px-3 py-4 border-b border-black/10 w-full"
       >
-        {/* Иконка напоминания — всегда слева */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            haptic('light');
-            onOpenReminder?.(task.id);
-          }}
-          className="shrink-0 mr-3 mt-1 p-1"
-          style={{ WebkitTapHighlightColor: 'transparent' }}
-          aria-label="Напоминание"
-        >
-          <Bell
-            size={20}
-            className={hasReminder && !task.done ? 'text-white' : 'text-white/40'}
-            fill={hasReminder && !task.done ? 'currentColor' : 'none'}
-          />
-        </button>
-
         {/* Текст задачи */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 mr-3">
           {isEditing ? (
             <input
               autoFocus
@@ -106,10 +88,28 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate, onOpenRemind
           {/* Таймер под текстом, если есть напоминание */}
           {task.reminder && !task.done && (
             <div className="text-xs mt-1 text-white/70">
-              🔔 {formatReminder(task.reminder)}
+              {formatReminder(task.reminder)}
             </div>
           )}
         </div>
+
+        {/* Колокольчик — справа */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            haptic('light');
+            onOpenReminder?.(task.id);
+          }}
+          className="shrink-0 mt-1 p-1"
+          style={{ WebkitTapHighlightColor: 'transparent' }}
+          aria-label="Напоминание"
+        >
+          <Bell
+            size={20}
+            className={hasReminder && !task.done ? 'text-white' : 'text-white/40'}
+            fill={hasReminder && !task.done ? 'currentColor' : 'none'}
+          />
+        </button>
       </motion.div>
     </div>
   );
@@ -123,7 +123,12 @@ function formatReminder(iso: string): string {
     if (diff < 0) return 'просрочено';
     if (diff < 60) return `через ${diff}м`;
     if (diff < 1440) return `через ${Math.round(diff / 60)}ч`;
-    return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    return (
+      '🔔 ' +
+      d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) +
+      ' ' +
+      d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+    );
   } catch {
     return '';
   }

@@ -10,7 +10,6 @@ interface ReminderSheetProps {
   onRemove: () => void;
 }
 
-// Генерируем список дат на 30 дней вперёд
 function getDateItems() {
   const items: { label: string; value: string }[] = [];
   const now = new Date();
@@ -35,30 +34,47 @@ export function ReminderSheet({ isOpen, currentReminder, onClose, onSave, onRemo
   const [selectedHour, setSelectedHour] = useState('12');
   const [selectedMinute, setSelectedMinute] = useState('00');
 
-  // Инициализация при открытии
   useEffect(() => {
     if (!isOpen) return;
+
+    // Если напоминание уже есть — показываем его
     if (currentReminder) {
       try {
         const d = new Date(currentReminder);
-        setSelectedDate(d.toISOString().slice(0, 10));
-        setSelectedHour(String(d.getHours()).padStart(2, '0'));
-        setSelectedMinute(String(d.getMinutes()).padStart(2, '0'));
-        return;
+        if (!isNaN(d.getTime())) {
+          setSelectedDate(d.toISOString().slice(0, 10));
+          setSelectedHour(String(d.getHours()).padStart(2, '0'));
+          setSelectedMinute(String(d.getMinutes()).padStart(2, '0'));
+          return;
+        }
       } catch {}
     }
-    // По умолчанию — сегодня, через час
+
+    // Иначе — по умолчанию СЛЕДУЮЩИЙ ЧАС (чтобы не было "просрочено")
     const now = new Date();
-    now.setHours(now.getHours() + 1, 0, 0, 0);
-    setSelectedDate(now.toISOString().slice(0, 10));
-    setSelectedHour(String(now.getHours()).padStart(2, '0'));
+    const next = new Date(now.getTime() + 60 * 60 * 1000); // +1 час
+    next.setMinutes(0, 0, 0); // обнуляем минуты
+
+    // Если следующий час уже перешёл в завтра — берём завтра
+    if (next.getHours() < now.getHours()) {
+      next.setDate(next.getDate() + 1);
+    }
+
+    setSelectedDate(next.toISOString().slice(0, 10));
+    setSelectedHour(String(next.getHours()).padStart(2, '0'));
     setSelectedMinute('00');
   }, [isOpen, currentReminder]);
 
   const handleDone = () => {
     try {
       const [y, m, d] = selectedDate.split('-').map(Number);
-      const date = new Date(y, m - 1, d, parseInt(selectedHour), parseInt(selectedMinute));
+      let date = new Date(y, m - 1, d, parseInt(selectedHour), parseInt(selectedMinute));
+
+      // Если выбранное время в прошлом — переносим на завтра
+      if (date.getTime() < Date.now()) {
+        date = new Date(date.getTime() + 24 * 60 * 60 * 1000);
+      }
+
       onSave(date.toISOString());
       onClose();
     } catch (e) {
@@ -80,7 +96,6 @@ export function ReminderSheet({ isOpen, currentReminder, onClose, onSave, onRemo
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Затемнение */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -89,8 +104,6 @@ export function ReminderSheet({ isOpen, currentReminder, onClose, onSave, onRemo
             className="fixed inset-0 bg-black/60 z-40"
             style={{ backdropFilter: 'blur(4px)' }}
           />
-
-          {/* Шторка */}
           <motion.div
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
@@ -103,12 +116,10 @@ export function ReminderSheet({ isOpen, currentReminder, onClose, onSave, onRemo
             className="fixed bottom-0 left-0 right-0 z-50 bg-zinc-900 rounded-t-3xl pb-8"
             style={{ touchAction: 'none' }}
           >
-            {/* Ручка сверху */}
             <div className="flex justify-center pt-3 pb-4">
               <div className="w-10 h-1.5 bg-zinc-600 rounded-full" />
             </div>
 
-            {/* Заголовок + кнопки */}
             <div className="flex justify-between items-center px-6 pb-4">
               <button
                 onClick={() => { onRemove(); onClose(); }}
@@ -124,9 +135,7 @@ export function ReminderSheet({ isOpen, currentReminder, onClose, onSave, onRemo
               </button>
             </div>
 
-            {/* Колёса */}
             <div className="flex justify-center items-start px-4 relative">
-              {/* Подсветка выбранной строки */}
               <div
                 className="absolute left-4 right-4 bg-zinc-800 rounded-xl pointer-events-none"
                 style={{ top: '50%', height: 36, marginTop: -18 }}
