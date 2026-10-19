@@ -24,27 +24,28 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate }: SwipeableT
     const threshold = 80;
     
     if (info.offset.x > threshold) {
-      // Свайп вправо -> выполнено
       haptic('medium');
       onToggle(task.id);
       controls.start({ x: 0, transition: { type: 'spring', stiffness: 300, damping: 25 } });
     } else if (info.offset.x < -threshold) {
-      // Свайп влево -> удалить
       haptic('heavy');
       await controls.start({ x: -400, opacity: 0, transition: { duration: 0.2 } });
       onDelete(task.id);
     } else {
-      // Возврат на место
       controls.start({ x: 0, transition: { type: 'spring', stiffness: 300, damping: 25 } });
     }
   };
 
   return (
-    <div className="relative overflow-hidden bg-black">
-      {/* Фоны под карточкой (появляются при свайпе) */}
-      <div className="absolute inset-0 flex justify-between items-center px-8">
-        <Check size={28} className="text-green-500" strokeWidth={3} />
-        <X size={28} className="text-red-500" strokeWidth={3} />
+    <div className="relative overflow-hidden bg-black w-full">
+      {/* Фоны под карточкой. Привязываем иконки к краям экрана */}
+      <div className="absolute inset-0 flex justify-between items-center">
+        <div className="pl-6 h-full flex items-center">
+          <Check size={28} className="text-green-500" strokeWidth={3} />
+        </div>
+        <div className="pr-6 h-full flex items-center">
+          <X size={28} className="text-red-500" strokeWidth={3} />
+        </div>
       </div>
 
       <motion.div
@@ -54,7 +55,7 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate }: SwipeableT
         onDragEnd={handleDragEnd}
         animate={controls}
         whileTap={{ cursor: 'grabbing' }}
-        className={`relative flex items-center justify-between px-6 py-4 border-b border-black/10 transition-colors duration-300 ${
+        className={`relative flex items-center justify-between px-6 py-4 border-b border-black/10 transition-colors duration-300 w-full ${
           task.done ? 'bg-zinc-800' : 'bg-orange-600'
         }`}
       >
