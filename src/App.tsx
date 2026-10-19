@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { SwipeableTask } from './components/SwipeableTask';
+import { ReminderSheet } from './components/ReminderSheet';
 import { Task } from './types';
 import { useAppState } from './hooks/useAppState';
 import { Palette } from 'lucide-react';
@@ -11,6 +12,7 @@ export default function App() {
   const { tasks, baseColor, updateTasks, setBaseColor } = useAppState();
   const [showPalette, setShowPalette] = useState(false);
   const [newTaskText, setNewTaskText] = useState('');
+  const [editingReminderId, setEditingReminderId] = useState<string | null>(null);
 
   const headerBg = darkenColor(baseColor, 5);
   const taskBg = lightenColor(baseColor, 5);
@@ -29,6 +31,10 @@ export default function App() {
 
   const updateTask = (id: string, text: string) => {
     updateTasks(prev => prev.map(t => (t.id === id ? { ...t, text } : t)));
+  };
+
+  const setReminder = (id: string, reminder: string | undefined) => {
+    updateTasks(prev => prev.map(t => (t.id === id ? { ...t, reminder } : t)));
   };
 
   const addTask = (e: React.FormEvent) => {
@@ -51,6 +57,8 @@ export default function App() {
       return a.done ? 1 : -1;
     });
   }, [tasks]);
+
+  const editingTask = editingReminderId ? tasks.find(t => t.id === editingReminderId) : null;
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden" style={{ backgroundColor: headerBg }}>
@@ -102,6 +110,7 @@ export default function App() {
             onToggle={toggleTask}
             onDelete={deleteTask}
             onUpdate={updateTask}
+            onOpenReminder={setEditingReminderId}
             taskBg={task.done ? headerBg : taskBg}
           />
         ))}
@@ -116,6 +125,14 @@ export default function App() {
           />
         </form>
       </div>
+
+      <ReminderSheet
+        isOpen={editingReminderId !== null}
+        currentReminder={editingTask?.reminder}
+        onClose={() => setEditingReminderId(null)}
+        onSave={reminder => editingReminderId && setReminder(editingReminderId, reminder)}
+        onRemove={() => editingReminderId && setReminder(editingReminderId, undefined)}
+      />
     </div>
   );
 }

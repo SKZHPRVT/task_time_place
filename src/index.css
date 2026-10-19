@@ -7,13 +7,13 @@
   --tg-safe-area-top: var(--tg-safe-area-inset-top, env(safe-area-inset-top, 0px));
   --tg-safe-area-bottom: var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
   --tg-content-safe-area-top: var(--tg-content-safe-area-inset-top, 0px);
-  --app-bg: #000; /* Динамический фон, меняется из JS */
+  --app-bg: #000;
 }
 
 html, body {
   margin: 0;
   padding: 0;
-  background-color: var(--app-bg); /* Красим html и body в цвет шапки */
+  background-color: var(--app-bg);
   color: #fff;
   overscroll-behavior: none;
   user-select: none;
@@ -27,7 +27,6 @@ html, body {
   height: var(--tg-viewport-height);
   display: flex;
   flex-direction: column;
-  /* Отступ сверху для безопасной зоны */
   padding-top: calc(var(--tg-safe-area-top) + var(--tg-content-safe-area-top) + 16px);
   background-color: transparent;
 }
@@ -35,4 +34,12 @@ html, body {
 ::-webkit-scrollbar {
   width: 0;
   background: transparent;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
