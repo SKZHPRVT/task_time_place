@@ -33,9 +33,6 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate, taskBg }: Sw
   };
 
   const bgColor = taskBg || (task.done ? '#3f3f46' : '#a1a1aa');
-  
-  // Активные — белый шрифт. Неактивные — темно-серый.
-  const textColor = task.done ? 'text-zinc-500' : 'text-white';
 
   return (
     <div className="relative overflow-hidden bg-black w-full">
@@ -68,15 +65,15 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate, taskBg }: Sw
             onKeyDown={e => {
               if (e.key === 'Enter') e.currentTarget.blur();
             }}
-            className={`bg-transparent outline-none w-full text-xl font-medium ${textColor} ${
-              task.done ? 'line-through' : ''
+            className={`bg-transparent outline-none w-full text-xl font-medium text-white ${
+              task.done ? 'line-through opacity-60' : ''
             }`}
           />
         ) : (
           <div
             onClick={() => setIsEditing(true)}
-            className={`text-xl w-full truncate font-medium ${textColor} ${
-              task.done ? 'line-through' : ''
+            className={`text-xl w-full truncate font-medium text-white ${
+              task.done ? 'line-through opacity-60' : ''
             }`}
           >
             {task.text || <span className="opacity-50">Новая задача</span>}
@@ -84,7 +81,7 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate, taskBg }: Sw
         )}
 
         {task.reminder && !task.done && (
-          <div className={`flex items-center gap-1 text-sm shrink-0 ml-4 ${textColor}`}>
+          <div className="flex items-center gap-1 text-sm shrink-0 ml-4 text-white">
             <Bell size={16} />
             <span>in 12m</span>
           </div>

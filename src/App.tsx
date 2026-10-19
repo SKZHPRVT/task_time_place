@@ -23,7 +23,6 @@ export default function App() {
   // 5% разница цветов
   const headerBg = darkenColor(baseColor, 5);
   const taskBg = lightenColor(baseColor, 5);
-  const doneTaskBg = darkenColor(baseColor, 25);
 
   // Синхронизируем цвет шапки Telegram с нашим
   useEffect(() => {
@@ -118,7 +117,7 @@ export default function App() {
             onToggle={toggleTask}
             onDelete={deleteTask}
             onUpdate={updateTask}
-            taskBg={task.done ? doneTaskBg : taskBg}
+            taskBg={task.done ? headerBg : taskBg}
           />
         ))}
 
