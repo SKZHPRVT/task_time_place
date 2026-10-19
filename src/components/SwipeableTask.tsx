@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, useAnimation, PanInfo } from 'framer-motion';
-import { Bell } from 'lucide-react';
+import { Bell, Check, X } from 'lucide-react';
 import { Task } from '../types';
 
 const haptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
@@ -42,9 +42,9 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate }: SwipeableT
   return (
     <div className="relative overflow-hidden bg-black">
       {/* Фоны под карточкой (появляются при свайпе) */}
-      <div className="absolute inset-0 flex justify-between items-center px-6">
-        <div className="text-green-500 font-bold text-lg">Готово</div>
-        <div className="text-red-500 font-bold text-lg">Удалить</div>
+      <div className="absolute inset-0 flex justify-between items-center px-8">
+        <Check size={28} className="text-green-500" strokeWidth={3} />
+        <X size={28} className="text-red-500" strokeWidth={3} />
       </div>
 
       <motion.div
