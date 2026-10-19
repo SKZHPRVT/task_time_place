@@ -2,13 +2,17 @@ import { useState } from 'react';
 import { SwipeableTask } from './components/SwipeableTask';
 import { Task } from './types';
 import { useLocalStorage } from './hooks/useLocalStorage';
+import { Info } from 'lucide-react';
 
 export default function App() {
-  // Используем localStorage, чтобы задачи не пропадали при перезагрузке
+  const [isFirstLaunch, setIsFirstLaunch] = useLocalStorage('clear_first_launch', true);
+  
+  // Задачи-подсказки для обучения
   const [tasks, setTasks] = useLocalStorage<Task[]>('clear_tasks', [
-    { id: '1', text: 'Уборка/разбор вещей', done: false },
-    { id: '2', text: 'Похудеть до 73.5 кг', done: false, reminder: '2026-10-19T23:00:00' },
-    { id: '3', text: 'Выкладка на авито ненужного', done: true },
+    { id: 'tut-1', text: '👉 Свайпни вправо, чтобы выполнить', done: false },
+    { id: 'tut-2', text: '👈 Свайпни влево, чтобы удалить', done: false },
+    { id: 'tut-3', text: '👆 Нажми на текст, чтобы изменить', done: false },
+    { id: 'tut-4', text: 'Это выполнено (свайп вправо)', done: true },
   ]);
 
   const [newTaskText, setNewTaskText] = useState('');
@@ -35,8 +39,13 @@ export default function App() {
       done: false,
     };
     
-    setTasks([newTask, ...tasks]); // Добавляем в начало
+    setTasks([newTask, ...tasks]);
     setNewTaskText('');
+  };
+
+  const clearTutorial = () => {
+    setTasks(tasks.filter(t => !t.id.startsWith('tut-')));
+    setIsFirstLaunch(false);
   };
 
   return (
@@ -45,6 +54,22 @@ export default function App() {
       <div className="pt-16 pb-6 px-6 bg-red-600 transition-colors duration-500">
         <h1 className="text-5xl font-bold text-white tracking-tight">Задачи</h1>
       </div>
+
+      {/* Плашка онбординга */}
+      {isFirstLaunch && tasks.some(t => t.id.startsWith('tut-')) && (
+        <div className="bg-zinc-900 px-6 py-3 flex items-center justify-between border-b border-white/10">
+          <div className="flex items-center gap-2 text-zinc-400 text-sm">
+            <Info size={16} />
+            <span>Это обучающие задачи</span>
+          </div>
+          <button 
+            onClick={clearTutorial}
+            className="text-blue-500 text-sm font-semibold active:opacity-50 transition-opacity"
+          >
+            Очистить
+          </button>
+        </div>
+      )}
 
       {/* Список задач */}
       <div className="flex-1 overflow-y-auto pb-24">
