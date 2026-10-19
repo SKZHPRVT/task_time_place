@@ -2,12 +2,15 @@ import { useState } from 'react';
 import { SwipeableTask } from './components/SwipeableTask';
 import { Task } from './types';
 import { useLocalStorage } from './hooks/useLocalStorage';
-import { Info } from 'lucide-react';
+import { Info, Palette } from 'lucide-react';
+import { COLOR_PALETTE, darkenColor, lightenColor } from './utils/color';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function App() {
   const [isFirstLaunch, setIsFirstLaunch] = useLocalStorage('clear_first_launch', true);
+  const [baseColor, setBaseColor] = useLocalStorage('clear_base_color', '#71717a');
+  const [showPalette, setShowPalette] = useState(false);
   
-  // Задачи-подсказки для обучения
   const [tasks, setTasks] = useLocalStorage<Task[]>('clear_tasks', [
     { id: 'tut-1', text: '👉 Свайпни вправо, чтобы выполнить', done: false },
     { id: 'tut-2', text: '👈 Свайпни влево, чтобы удалить', done: false },
@@ -48,12 +51,54 @@ export default function App() {
     setIsFirstLaunch(false);
   };
 
+  // Вычисляем цвета на основе выбранного
+  const headerBg = darkenColor(baseColor, 30); // Шапка темнее
+  const taskBg = lightenColor(baseColor, 40);  // Задачи светлее
+  const doneTaskBg = '#27272a'; // Завершенные всегда темно-серые
+
   return (
     <div className="min-h-screen flex flex-col bg-black overflow-hidden">
       {/* Хедер */}
-      <div className="pt-16 pb-6 px-6 bg-red-600 transition-colors duration-500">
+      <div 
+        className="pt-16 pb-4 px-6 transition-colors duration-500 flex justify-between items-end"
+        style={{ backgroundColor: headerBg }}
+      >
         <h1 className="text-5xl font-bold text-white tracking-tight">Задачи</h1>
+        <button 
+          onClick={() => setShowPalette(!showPalette)}
+          className="mb-1 p-2 rounded-full active:bg-white/10 transition-colors"
+        >
+          <Palette size={24} className="text-white/80" />
+        </button>
       </div>
+
+      {/* Палитра цветов (выезжает) */}
+      <AnimatePresence>
+        {showPalette && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden bg-zinc-900 border-b border-white/5"
+          >
+            <div className="flex gap-3 px-6 py-4 overflow-x-auto">
+              {COLOR_PALETTE.map((c) => (
+                <button
+                  key={c.hex}
+                  onClick={() => {
+                    setBaseColor(c.hex);
+                    setShowPalette(false);
+                  }}
+                  className={`w-10 h-10 rounded-full shrink-0 transition-transform active:scale-90 ${
+                    baseColor === c.hex ? 'ring-2 ring-white ring-offset-2 ring-offset-zinc-900' : ''
+                  }`}
+                  style={{ backgroundColor: c.hex }}
+                />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Плашка онбординга */}
       {isFirstLaunch && tasks.some(t => t.id.startsWith('tut-')) && (
@@ -80,6 +125,7 @@ export default function App() {
             onToggle={toggleTask}
             onDelete={deleteTask}
             onUpdate={updateTask}
+            taskBg={task.done ? doneTaskBg : taskBg}
           />
         ))}
         

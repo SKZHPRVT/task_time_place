@@ -14,9 +14,10 @@ interface SwipeableTaskProps {
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, text: string) => void;
+  taskBg: string;
 }
 
-export function SwipeableTask({ task, onToggle, onDelete, onUpdate }: SwipeableTaskProps) {
+export function SwipeableTask({ task, onToggle, onDelete, onUpdate, taskBg }: SwipeableTaskProps) {
   const [isEditing, setIsEditing] = useState(false);
   const controls = useAnimation();
 
@@ -55,9 +56,8 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate }: SwipeableT
         onDragEnd={handleDragEnd}
         animate={controls}
         whileTap={{ cursor: 'grabbing' }}
-        className={`relative flex items-center justify-between px-6 py-4 border-b border-black/10 transition-colors duration-300 w-full ${
-          task.done ? 'bg-zinc-800' : 'bg-orange-600'
-        }`}
+        style={{ backgroundColor: taskBg }}
+        className="relative flex items-center justify-between px-6 py-4 border-b border-black/10 transition-colors duration-300 w-full"
       >
         {isEditing ? (
           <input
@@ -70,21 +70,23 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate }: SwipeableT
             onKeyDown={(e) => {
               if (e.key === 'Enter') e.currentTarget.blur();
             }}
-            className="bg-transparent outline-none w-full text-xl text-white font-medium placeholder-white/50"
+            className={`bg-transparent outline-none w-full text-xl font-medium placeholder-white/50 ${
+              task.done ? 'text-gray-400 line-through' : 'text-zinc-900'
+            }`}
           />
         ) : (
           <div 
             onClick={() => setIsEditing(true)}
-            className={`text-xl text-white w-full truncate font-medium transition-all ${
-              task.done ? 'line-through text-gray-400' : ''
+            className={`text-xl w-full truncate font-medium transition-all ${
+              task.done ? 'line-through text-gray-400' : 'text-zinc-900'
             }`}
           >
-            {task.text || <span className="text-white/50">Новая задача</span>}
+            {task.text || <span className="opacity-50">Новая задача</span>}
           </div>
         )}
 
         {task.reminder && !task.done && (
-          <div className="flex items-center gap-1 text-sm text-white/80 shrink-0 ml-4">
+          <div className="flex items-center gap-1 text-sm shrink-0 ml-4 text-zinc-700">
             <Bell size={16} />
             <span>in 12m</span>
           </div>
