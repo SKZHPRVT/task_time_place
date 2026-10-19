@@ -12,14 +12,11 @@ function applyViewportHeight(): void {
 
 export function setHeaderColor(color: string): void {
   if (!tg) return;
-  if (typeof tg.setHeaderColor === 'function') {
-    safeCall(() => tg.setHeaderColor(color));
-  }
-  if (typeof tg.setBackgroundColor === 'function') {
-    safeCall(() => tg.setBackgroundColor(color));
-  }
-  // Красим body и html в тот же цвет
-  document.documentElement.style.backgroundColor = color;
+  if (typeof tg.setHeaderColor === 'function') safeCall(() => tg.setHeaderColor(color));
+  if (typeof tg.setBackgroundColor === 'function') safeCall(() => tg.setBackgroundColor(color));
+  
+  // Меняем CSS-переменную для html/body
+  document.documentElement.style.setProperty('--app-bg', color);
   document.body.style.backgroundColor = color;
 }
 
@@ -35,8 +32,12 @@ export function initTelegram(): void {
   document.body.classList.add('is-telegram');
 
   safeCall(() => tg.ready());
-  safeCall(() => tg.expand()); // <-- Только expand, без requestFullscreen
+  safeCall(() => tg.expand());
 
+  // ВОЗВРАЩАЕМ полноэкранный режим
+  if (typeof tg.requestFullscreen === 'function') {
+    safeCall(() => tg.requestFullscreen!());
+  }
   if (typeof tg.disableVerticalSwipes === 'function') {
     safeCall(() => tg.disableVerticalSwipes!());
   }
