@@ -14,8 +14,11 @@ export function setHeaderColor(color: string): void {
   if (!tg) return;
   if (typeof tg.setHeaderColor === 'function') safeCall(() => tg.setHeaderColor(color));
   if (typeof tg.setBackgroundColor === 'function') safeCall(() => tg.setBackgroundColor(color));
+  // Красим только html — это фон «за пределами» контента
+  document.documentElement.style.backgroundColor = color;
   document.documentElement.style.setProperty('--app-bg', color);
-  document.body.style.backgroundColor = color;
+  // body оставляем ЧЁРНЫМ — чтобы под клавиатурой не просвечивало
+  document.body.style.backgroundColor = '#000';
 }
 
 export function initTelegram(): void {
@@ -50,10 +53,6 @@ export function haptic(style: 'light' | 'medium' | 'heavy' = 'light'): void {
   if (!tg?.HapticFeedback) return;
   safeCall(() => tg.HapticFeedback!.impactOccurred(style));
 }
-
-// ═══════════════════════════════════════════════════════
-// CloudStorage (Bot API 6.9+)
-// ═══════════════════════════════════════════════════════
 
 export function cloudSetItem(key: string, value: string): Promise<void> {
   return new Promise(resolve => {
