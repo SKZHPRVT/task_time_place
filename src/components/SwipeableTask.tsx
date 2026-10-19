@@ -39,7 +39,6 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate, taskBg }: Sw
 
   return (
     <div className="relative overflow-hidden bg-black w-full">
-      {/* Фоны под карточкой. Привязываем иконки к краям экрана */}
       <div className="absolute inset-0 flex justify-between items-center">
         <div className="pl-6 h-full flex items-center">
           <Check size={28} className="text-green-500" strokeWidth={3} />
@@ -55,9 +54,8 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate, taskBg }: Sw
         dragElastic={0.2}
         onDragEnd={handleDragEnd}
         animate={controls}
-        whileTap={{ cursor: 'grabbing' }}
         style={{ backgroundColor: taskBg }}
-        className="relative flex items-center justify-between px-6 py-4 border-b border-black/10 transition-colors duration-300 w-full"
+        className="relative flex items-center justify-between px-6 py-4 border-b border-black/10 w-full"
       >
         {isEditing ? (
           <input
@@ -70,14 +68,14 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate, taskBg }: Sw
             onKeyDown={(e) => {
               if (e.key === 'Enter') e.currentTarget.blur();
             }}
-            className={`bg-transparent outline-none w-full text-xl font-medium placeholder-white/50 ${
+            className={`bg-transparent outline-none w-full text-xl font-medium ${
               task.done ? 'text-gray-400 line-through' : 'text-zinc-900'
             }`}
           />
         ) : (
           <div 
             onClick={() => setIsEditing(true)}
-            className={`text-xl w-full truncate font-medium transition-all ${
+            className={`text-xl w-full truncate font-medium ${
               task.done ? 'line-through text-gray-400' : 'text-zinc-900'
             }`}
           >

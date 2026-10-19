@@ -51,10 +51,9 @@ export default function App() {
     setIsFirstLaunch(false);
   };
 
-  // Вычисляем цвета на основе выбранного
-  const headerBg = darkenColor(baseColor, 30); // Шапка темнее
-  const taskBg = lightenColor(baseColor, 40);  // Задачи светлее
-  const doneTaskBg = '#27272a'; // Завершенные всегда темно-серые
+  const headerBg = darkenColor(baseColor, 30);
+  const taskBg = lightenColor(baseColor, 40);
+  const doneTaskBg = '#3f3f46';
 
   return (
     <div className="min-h-screen flex flex-col bg-black overflow-hidden">
@@ -66,20 +65,21 @@ export default function App() {
         <h1 className="text-5xl font-bold text-white tracking-tight">Задачи</h1>
         <button 
           onClick={() => setShowPalette(!showPalette)}
-          className="mb-1 p-2 rounded-full active:bg-white/10 transition-colors"
+          className="mb-1 p-2 rounded-full transition-colors"
+          style={{ WebkitTapHighlightColor: 'transparent' }}
         >
           <Palette size={24} className="text-white/80" />
         </button>
       </div>
 
-      {/* Палитра цветов (выезжает) */}
+      {/* Палитра цветов */}
       <AnimatePresence>
         {showPalette && (
           <motion.div 
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden bg-zinc-900 border-b border-white/5"
+            className="overflow-hidden bg-zinc-900 border-b border-zinc-800"
           >
             <div className="flex gap-3 px-6 py-4 overflow-x-auto">
               {COLOR_PALETTE.map((c) => (
@@ -89,10 +89,10 @@ export default function App() {
                     setBaseColor(c.hex);
                     setShowPalette(false);
                   }}
-                  className={`w-10 h-10 rounded-full shrink-0 transition-transform active:scale-90 ${
+                  className={`w-10 h-10 rounded-full shrink-0 transition-transform ${
                     baseColor === c.hex ? 'ring-2 ring-white ring-offset-2 ring-offset-zinc-900' : ''
                   }`}
-                  style={{ backgroundColor: c.hex }}
+                  style={{ backgroundColor: c.hex, WebkitTapHighlightColor: 'transparent' }}
                 />
               ))}
             </div>
@@ -102,14 +102,15 @@ export default function App() {
 
       {/* Плашка онбординга */}
       {isFirstLaunch && tasks.some(t => t.id.startsWith('tut-')) && (
-        <div className="bg-zinc-900 px-6 py-3 flex items-center justify-between border-b border-white/10">
+        <div className="bg-zinc-900 px-6 py-3 flex items-center justify-between border-b border-zinc-800">
           <div className="flex items-center gap-2 text-zinc-400 text-sm">
             <Info size={16} />
             <span>Это обучающие задачи</span>
           </div>
           <button 
             onClick={clearTutorial}
-            className="text-blue-500 text-sm font-semibold active:opacity-50 transition-opacity"
+            className="text-blue-500 text-sm font-semibold"
+            style={{ WebkitTapHighlightColor: 'transparent' }}
           >
             Очистить
           </button>
@@ -129,14 +130,13 @@ export default function App() {
           />
         ))}
         
-        {/* Поле добавления новой задачи */}
-        <form onSubmit={addTask} className="px-6 py-4 border-b border-white/5">
+        <form onSubmit={addTask} className="px-6 py-4 border-b border-zinc-900">
           <input
             type="text"
             value={newTaskText}
             onChange={(e) => setNewTaskText(e.target.value)}
             placeholder="+ Новая задача"
-            className="w-full bg-transparent text-white/50 text-xl outline-none focus:text-white transition-colors placeholder:text-white/30"
+            className="w-full bg-transparent text-zinc-400 text-xl outline-none placeholder-zinc-600"
           />
         </form>
       </div>
