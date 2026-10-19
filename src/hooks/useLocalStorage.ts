@@ -8,20 +8,32 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
       
       const parsed = JSON.parse(item);
       
-      // Валидация для массива задач
-      if (Array.isArray(parsed)) {
+      // Жесткая валидация для массива задач
+      if (key === 'clear_tasks') {
+        if (!Array.isArray(parsed)) return initialValue;
         const isValid = parsed.every((t: any) => 
-          t && typeof t === 'object' && typeof t.id === 'string' && typeof t.text === 'string'
+          t && typeof t === 'object' && 
+          typeof t.id === 'string' && 
+          typeof t.text === 'string' && 
+          typeof t.done === 'boolean'
         );
         if (!isValid) {
-          console.warn('Invalid tasks in localStorage, resetting to default');
+          console.warn('[useLocalStorage] Invalid tasks format, resetting');
+          return initialValue;
+        }
+      }
+      
+      // Жесткая валидация для цвета (должна быть строка вида #xxxxxx)
+      if (key === 'clear_base_color') {
+        if (typeof parsed !== 'string' || !parsed.startsWith('#') || parsed.length < 4) {
+          console.warn('[useLocalStorage] Invalid color format, resetting');
           return initialValue;
         }
       }
       
       return parsed;
     } catch (error) {
-      console.warn(`Error reading localStorage key "${key}":`, error);
+      console.warn(`[useLocalStorage] Error reading key "${key}":`, error);
       return initialValue;
     }
   });
@@ -30,7 +42,7 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
     try {
       window.localStorage.setItem(key, JSON.stringify(value));
     } catch (error) {
-      console.warn(`Error setting localStorage key "${key}":`, error);
+      console.warn(`[useLocalStorage] Error setting key "${key}":`, error);
     }
   }, [key, value]);
 
