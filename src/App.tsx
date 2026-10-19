@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { SwipeableTask } from './components/SwipeableTask';
 import { Task } from './types';
 import { useLocalStorage } from './hooks/useLocalStorage';
@@ -20,9 +20,10 @@ export default function App() {
 
   const [newTaskText, setNewTaskText] = useState('');
 
-  const headerBg = darkenColor(baseColor, 7);
-  const taskBg = lightenColor(baseColor, 7);
-  const doneTaskBg = darkenColor(baseColor, 30);
+  // 5% разница цветов
+  const headerBg = darkenColor(baseColor, 5);
+  const taskBg = lightenColor(baseColor, 5);
+  const doneTaskBg = darkenColor(baseColor, 25);
 
   // Синхронизируем цвет шапки Telegram с нашим
   useEffect(() => {
@@ -58,6 +59,14 @@ export default function App() {
     setTasks([newTask, ...tasks]);
     setNewTaskText('');
   };
+
+  // Сортируем задачи: сначала активные, потом выполненные
+  const sortedTasks = useMemo(() => {
+    return [...tasks].sort((a, b) => {
+      if (a.done === b.done) return 0;
+      return a.done ? 1 : -1;
+    });
+  }, [tasks]);
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden" style={{ backgroundColor: headerBg }}>
@@ -102,7 +111,7 @@ export default function App() {
       </AnimatePresence>
 
       <div className="flex-1 overflow-y-auto pb-24 bg-black">
-        {tasks.map(task => (
+        {sortedTasks.map(task => (
           <SwipeableTask
             key={task.id}
             task={task}
