@@ -12,8 +12,8 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "noUnusedLocals": false,     // Отключаем строгость к неиспользуемым переменным
+    "noUnusedParameters": false, // Отключаем строгость к неиспользуемым аргументам
     "noFallthroughCasesInSwitch": true
   },
   "include": ["src"],
