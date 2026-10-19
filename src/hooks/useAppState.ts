@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Task } from '../types';
 
 export interface AppState {
@@ -16,19 +16,73 @@ const DEFAULT_STATE: AppState = {
   baseColor: '#71717a',
 };
 
+const STORAGE_KEY = 'clear_app_state_v1';
+
+function isValidState(state: any): state is AppState {
+  try {
+    if (!state || typeof state !== 'object') return false;
+    if (typeof state.baseColor !== 'string' || !state.baseColor.startsWith('#')) return false;
+    if (!Array.isArray(state.tasks)) return false;
+    return state.tasks.every(
+      (t: any) =>
+        t &&
+        typeof t === 'object' &&
+        typeof t.id === 'string' &&
+        typeof t.text === 'string' &&
+        typeof t.done === 'boolean'
+    );
+  } catch (e) {
+    return false;
+  }
+}
+
+function loadState(): AppState {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return DEFAULT_STATE;
+    const parsed = JSON.parse(raw);
+    if (isValidState(parsed)) return parsed;
+    console.warn('[State] Invalid state, resetting');
+    return DEFAULT_STATE;
+  } catch (e) {
+    console.warn('[State] Load error:', e);
+    return DEFAULT_STATE;
+  }
+}
+
+function saveState(state: AppState): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (e) {
+    console.warn('[State] Save error:', e);
+  }
+}
+
 export function useAppState() {
-  // ВРЕМЕННО: только in-memory state, без localStorage
-  const [state, setState] = useState<AppState>(DEFAULT_STATE);
+  const [state, setState] = useState<AppState>(() => loadState());
+
+  useEffect(() => {
+    saveState(state);
+  }, [state]);
 
   const updateTasks = useCallback((updater: (tasks: Task[]) => Task[]) => {
     setState(prev => {
-      const newTasks = updater(prev.tasks);
-      return { ...prev, tasks: newTasks };
+      try {
+        const newTasks = updater(prev.tasks);
+        if (!Array.isArray(newTasks)) return prev;
+        return { ...prev, tasks: newTasks };
+      } catch (e) {
+        console.error('[State] Update error:', e);
+        return prev;
+      }
     });
   }, []);
 
   const setBaseColor = useCallback((color: string) => {
-    setState(prev => ({ ...prev, baseColor: color }));
+    setState(prev => {
+      if (typeof color !== 'string' || !color.startsWith('#')) return prev;
+      return { ...prev, baseColor: color };
+    });
   }, []);
 
   return {

@@ -1,10 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { SwipeableTask } from './components/SwipeableTask';
 import { Task } from './types';
 import { useAppState } from './hooks/useAppState';
 import { Palette } from 'lucide-react';
 import { COLOR_PALETTE, darkenColor, lightenColor } from './utils/color';
 import { motion, AnimatePresence } from 'framer-motion';
+import { setHeaderColor } from './lib/telegram';
 
 export default function App() {
   const { tasks, baseColor, updateTasks, setBaseColor } = useAppState();
@@ -13,6 +14,10 @@ export default function App() {
 
   const headerBg = darkenColor(baseColor, 5);
   const taskBg = lightenColor(baseColor, 5);
+
+  useEffect(() => {
+    setHeaderColor(headerBg);
+  }, [headerBg]);
 
   const toggleTask = (id: string) => {
     updateTasks(prev => prev.map(t => (t.id === id ? { ...t, done: !t.done } : t)));
