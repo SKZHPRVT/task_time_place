@@ -4,6 +4,11 @@
 
 :root {
   --tg-viewport-height: 100vh;
+  /* Безопасные отступы: приоритет у Telegram, затем у нативного CSS env() */
+  --tg-safe-area-top: var(--tg-safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --tg-safe-area-bottom: var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  /* Высота элементов управления Telegram (кнопка закрыть), если доступна */
+  --tg-content-safe-area-top: var(--tg-content-safe-area-inset-top, 0px);
 }
 
 html, body {
@@ -23,6 +28,8 @@ html, body {
   height: var(--tg-viewport-height);
   display: flex;
   flex-direction: column;
+  /* Отодвигаем весь контент вниз от верхней панели Telegram */
+  padding-top: calc(var(--tg-safe-area-top) + var(--tg-content-safe-area-top) + 16px);
 }
 
 ::-webkit-scrollbar {

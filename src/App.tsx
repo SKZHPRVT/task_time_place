@@ -45,15 +45,15 @@ export default function App() {
     setNewTaskText('');
   };
 
-  // Мягкие переливы: шапка темнее на 7%, задачи светлее на 7%, выполненные темнее на 30%
   const headerBg = darkenColor(baseColor, 7);
   const taskBg = lightenColor(baseColor, 7);
   const doneTaskBg = darkenColor(baseColor, 30);
 
   return (
     <div className="flex-1 flex flex-col bg-black overflow-hidden">
+      {/* Убрали pt-12, так как отступ теперь регулируется в #root */}
       <div
-        className="pt-12 pb-4 px-6 transition-colors duration-300 flex justify-between items-end shrink-0"
+        className="pb-4 px-6 transition-colors duration-300 flex justify-between items-end shrink-0"
         style={{ backgroundColor: headerBg }}
       >
         <h1 className="text-5xl font-bold text-white tracking-tight">Задачи</h1>
