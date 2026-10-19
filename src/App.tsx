@@ -45,9 +45,10 @@ export default function App() {
     setNewTaskText('');
   };
 
-  const headerBg = darkenColor(baseColor, 30);
-  const taskBg = lightenColor(baseColor, 40);
-  const doneTaskBg = '#3f3f46';
+  // Более мягкие коэффициенты для сочетания цветов
+  const headerBg = darkenColor(baseColor, 15);  // Шапка чуть темнее
+  const taskBg = lightenColor(baseColor, 15);   // Задачи чуть светлее
+  const doneTaskBg = darkenColor(baseColor, 40); // Выполненные в тени
 
   return (
     <div className="min-h-screen flex flex-col bg-black overflow-hidden">

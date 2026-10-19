@@ -71,14 +71,14 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate, taskBg }: Sw
               if (e.key === 'Enter') e.currentTarget.blur();
             }}
             className={`bg-transparent outline-none w-full text-xl font-medium ${
-              task.done ? 'text-gray-400 line-through' : 'text-zinc-900'
+              task.done ? 'text-gray-300 line-through' : 'text-gray-900'
             }`}
           />
         ) : (
           <div 
             onClick={() => setIsEditing(true)}
             className={`text-xl w-full truncate font-medium ${
-              task.done ? 'line-through text-gray-400' : 'text-zinc-900'
+              task.done ? 'line-through text-gray-300' : 'text-gray-900'
             }`}
           >
             {task.text || <span className="opacity-50">Новая задача</span>}
@@ -86,7 +86,7 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate, taskBg }: Sw
         )}
 
         {task.reminder && !task.done && (
-          <div className="flex items-center gap-1 text-sm shrink-0 ml-4 text-zinc-700">
+          <div className="flex items-center gap-1 text-sm shrink-0 ml-4 text-gray-700">
             <Bell size={16} />
             <span>in 12m</span>
           </div>
