@@ -12,12 +12,9 @@ function applyViewportHeight(): void {
 
 export function setHeaderColor(color: string): void {
   if (!tg) return;
-  // ТОЛЬКО header — НЕ трогаем setBackgroundColor, иначе под клавиатурой будет заливка
   if (typeof tg.setHeaderColor === 'function') safeCall(() => tg.setHeaderColor(color));
-  
-  document.documentElement.style.backgroundColor = color;
-  document.documentElement.style.setProperty('--app-bg', color);
-  document.body.style.backgroundColor = color;
+  // Только CSS-переменная для #header-bg, html/body не трогаем
+  document.documentElement.style.setProperty('--app-header-color', color);
 }
 
 export function initTelegram(): void {
@@ -57,11 +54,7 @@ export function cloudSetItem(key: string, value: string): Promise<void> {
   return new Promise(resolve => {
     const cs = tg?.CloudStorage;
     if (!cs) return resolve();
-    try {
-      cs.setItem(key, value, () => resolve());
-    } catch {
-      resolve();
-    }
+    try { cs.setItem(key, value, () => resolve()); } catch { resolve(); }
   });
 }
 
@@ -71,8 +64,6 @@ export function cloudGetItem(key: string): Promise<string | null> {
     if (!cs) return resolve(null);
     try {
       cs.getItem(key, (_err: Error | null, value?: string) => resolve(value ?? null));
-    } catch {
-      resolve(null);
-    }
+    } catch { resolve(null); }
   });
 }

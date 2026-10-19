@@ -7,13 +7,14 @@
   --tg-safe-area-top: var(--tg-safe-area-inset-top, env(safe-area-inset-top, 0px));
   --tg-safe-area-bottom: var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
   --tg-content-safe-area-top: var(--tg-content-safe-area-inset-top, 0px);
-  --app-bg: #000;
+  --app-header-color: #000;
 }
 
 html, body {
   margin: 0;
   padding: 0;
-  background-color: var(--app-bg);
+  /* html и body — всегда чёрные. Под клавиатурой не будет заливки. */
+  background-color: #000;
   color: #fff;
   overscroll-behavior: none;
   user-select: none;
@@ -23,12 +24,27 @@ html, body {
   overflow: hidden;
 }
 
+/* Отдельный слой под системной зоной сверху — рисует цвет шапки */
+#header-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--tg-safe-area-top) + var(--tg-content-safe-area-top) + 16px);
+  background-color: var(--app-header-color);
+  z-index: 0;
+  pointer-events: none;
+  transition: background-color 0.3s;
+}
+
 #root {
+  position: relative;
   height: var(--tg-viewport-height);
   display: flex;
   flex-direction: column;
   padding-top: calc(var(--tg-safe-area-top) + var(--tg-content-safe-area-top) + 16px);
   background-color: transparent;
+  z-index: 1;
 }
 
 ::-webkit-scrollbar {

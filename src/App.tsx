@@ -59,7 +59,7 @@ export default function App() {
   const editingTask = editingReminderId ? tasks.find(t => t.id === editingReminderId) : null;
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden" style={{ backgroundColor: headerBg }}>
+    <div className="flex-1 flex flex-col overflow-hidden">
       <div
         className="pb-4 px-6 transition-colors duration-300 flex justify-between items-end shrink-0"
         style={{ backgroundColor: headerBg }}
