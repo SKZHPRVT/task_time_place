@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Task } from '../types';
+import { cloudGetItem, cloudSetItem, isTelegram } from '../lib/telegram';
 
 export interface AppState {
   version: 2;
@@ -19,6 +20,7 @@ const DEFAULT_STATE: AppState = {
 };
 
 const STORAGE_KEY = 'clear_app_state_v2';
+const CLOUD_KEY = 'clear_app_state_v2';
 
 function isValidState(state: any): state is AppState {
   try {
@@ -27,57 +29,86 @@ function isValidState(state: any): state is AppState {
     if (typeof state.baseColor !== 'string' || !state.baseColor.startsWith('#')) return false;
     if (!Array.isArray(state.tasks)) return false;
     return state.tasks.every(
-      (t: any) =>
-        t &&
-        typeof t === 'object' &&
-        typeof t.id === 'string' &&
-        typeof t.text === 'string' &&
-        typeof t.done === 'boolean'
+      (t: any) => t && typeof t.id === 'string' && typeof t.text === 'string' && typeof t.done === 'boolean'
     );
-  } catch (e) {
+  } catch {
     return false;
   }
 }
 
-function loadState(): AppState {
+function loadFromLocal(): AppState | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      console.log('[State] No saved state, using default');
-      return DEFAULT_STATE;
-    }
+    if (!raw) return null;
     const parsed = JSON.parse(raw);
-    if (isValidState(parsed)) {
-      console.log('[State] Loaded from localStorage:', parsed);
-      return parsed;
-    }
-    console.warn('[State] Invalid state, using default:', parsed);
-    return DEFAULT_STATE;
-  } catch (e) {
-    console.warn('[State] Load error, using default:', e);
-    return DEFAULT_STATE;
+    return isValidState(parsed) ? parsed : null;
+  } catch {
+    return null;
   }
 }
 
 export function useAppState() {
-  const [state, setState] = useState<AppState>(() => loadState());
+  const [state, setState] = useState<AppState>(DEFAULT_STATE);
+  const [ready, setReady] = useState(false);
+  const lastSyncedRef = useRef<string>('');
 
+  // Загрузка: сначала localStorage (мгновенно), потом CloudStorage (если Telegram)
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch (e) {
-      console.warn('[State] Save error:', e);
+    let cancelled = false;
+
+    async function init() {
+      const local = loadFromLocal();
+      if (local && !cancelled) {
+        setState(local);
+        lastSyncedRef.current = JSON.stringify(local);
+      }
+
+      if (isTelegram) {
+        const cloudRaw = await cloudGetItem(CLOUD_KEY);
+        if (!cancelled && cloudRaw) {
+          try {
+            const parsed = JSON.parse(cloudRaw);
+            if (isValidState(parsed)) {
+              const cloudStr = JSON.stringify(parsed);
+              if (cloudStr !== lastSyncedRef.current) {
+                console.log('[State] Loaded from CloudStorage (newer or differs from local)');
+                setState(parsed);
+                lastSyncedRef.current = cloudStr;
+                // Обновляем localStorage тоже
+                try { localStorage.setItem(STORAGE_KEY, cloudStr); } catch {}
+              }
+            }
+          } catch (e) {
+            console.warn('[State] Cloud parse error:', e);
+          }
+        }
+      }
+
+      if (!cancelled) setReady(true);
     }
-  }, [state]);
+
+    init();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Сохранение: в localStorage + CloudStorage при каждом изменении
+  useEffect(() => {
+    if (!ready) return;
+    const str = JSON.stringify(state);
+    if (str === lastSyncedRef.current) return;
+    lastSyncedRef.current = str;
+
+    try { localStorage.setItem(STORAGE_KEY, str); } catch (e) { console.warn('[State] Local save error:', e); }
+    if (isTelegram) {
+      cloudSetItem(CLOUD_KEY, str).catch(() => {});
+    }
+  }, [state, ready]);
 
   const updateTasks = useCallback((updater: (tasks: Task[]) => Task[]) => {
     setState(prev => {
       try {
         const newTasks = updater(prev.tasks);
-        if (!Array.isArray(newTasks)) {
-          console.warn('[State] Invalid tasks update rejected');
-          return prev;
-        }
+        if (!Array.isArray(newTasks)) return prev;
         return { ...prev, tasks: newTasks };
       } catch (e) {
         console.error('[State] Update error:', e);

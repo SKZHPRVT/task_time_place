@@ -9,18 +9,13 @@ interface SwipeableTaskProps {
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, text: string) => void;
+  onOpenReminder?: (id: string) => void;
   taskBg?: string;
 }
 
-export function SwipeableTask({ task, onToggle, onDelete, onUpdate, taskBg }: SwipeableTaskProps) {
+export function SwipeableTask({ task, onToggle, onDelete, onUpdate, onOpenReminder, taskBg }: SwipeableTaskProps) {
   const [isEditing, setIsEditing] = useState(false);
   const controls = useAnimation();
-
-  // Отладка: если задача битая, покажем это в консоли
-  if (!task || typeof task !== 'object') {
-    console.error('[SwipeableTask] Invalid task:', task);
-    return null;
-  }
 
   const handleDragEnd = async (_event: any, info: PanInfo) => {
     const threshold = 80;
@@ -42,11 +37,12 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate, taskBg }: Sw
 
   return (
     <div className="relative overflow-hidden bg-black w-full">
+      {/* Иконки прижаты к самым краям */}
       <div className="absolute inset-0 flex justify-between items-center">
-        <div className="pl-6 h-full flex items-center">
+        <div className="pl-2 h-full flex items-center">
           <Check size={28} className="text-green-500" strokeWidth={3} />
         </div>
-        <div className="pr-6 h-full flex items-center">
+        <div className="pr-2 h-full flex items-center">
           <X size={28} className="text-red-500" strokeWidth={3} />
         </div>
       </div>
@@ -58,41 +54,63 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate, taskBg }: Sw
         onDragEnd={handleDragEnd}
         animate={controls}
         style={{ backgroundColor: bgColor }}
-        className="relative flex items-center justify-between px-6 py-4 border-b border-black/10 w-full"
+        className="relative flex items-start justify-between px-3 py-4 border-b border-black/10 w-full"
       >
-        {isEditing ? (
-          <input
-            autoFocus
-            defaultValue={task.text || ''}
-            onBlur={e => {
-              setIsEditing(false);
-              onUpdate(task.id, e.target.value);
-            }}
-            onKeyDown={e => {
-              if (e.key === 'Enter') e.currentTarget.blur();
-            }}
-            className={`bg-transparent outline-none w-full text-xl font-medium text-white ${
-              task.done ? 'line-through opacity-60' : ''
-            }`}
-          />
-        ) : (
-          <div
-            onClick={() => setIsEditing(true)}
-            className={`text-xl w-full truncate font-medium text-white ${
-              task.done ? 'line-through opacity-60' : ''
-            }`}
-          >
-            {task.text || <span className="opacity-50">Новая задача</span>}
-          </div>
-        )}
+        <div className="flex-1 min-w-0">
+          {isEditing ? (
+            <input
+              autoFocus
+              defaultValue={task.text}
+              onBlur={e => {
+                setIsEditing(false);
+                onUpdate(task.id, e.target.value);
+              }}
+              onKeyDown={e => {
+                if (e.key === 'Enter') e.currentTarget.blur();
+              }}
+              className={`bg-transparent outline-none w-full text-xl font-medium text-white ${
+                task.done ? 'line-through opacity-60' : ''
+              }`}
+            />
+          ) : (
+            <div
+              onClick={() => setIsEditing(true)}
+              className={`text-xl font-medium text-white break-words whitespace-pre-wrap ${
+                task.done ? 'line-through opacity-60' : ''
+              }`}
+            >
+              {task.text || <span className="opacity-50">Новая задача</span>}
+            </div>
+          )}
+        </div>
 
         {task.reminder && !task.done && (
-          <div className="flex items-center gap-1 text-sm shrink-0 ml-4 text-white">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenReminder?.(task.id);
+            }}
+            className="flex items-center gap-1 text-sm shrink-0 ml-3 mt-1 text-white"
+          >
             <Bell size={16} />
-            <span>in 12m</span>
-          </div>
+            <span>{formatReminder(task.reminder)}</span>
+          </button>
         )}
       </motion.div>
     </div>
   );
+}
+
+function formatReminder(iso: string): string {
+  try {
+    const d = new Date(iso);
+    const now = new Date();
+    const diff = Math.round((d.getTime() - now.getTime()) / 60000);
+    if (diff < 0) return 'просрочено';
+    if (diff < 60) return `через ${diff}м`;
+    if (diff < 1440) return `через ${Math.round(diff / 60)}ч`;
+    return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+  } catch {
+    return '';
+  }
 }

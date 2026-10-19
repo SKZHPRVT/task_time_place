@@ -1,5 +1,11 @@
 /// <reference types="vite/client" />
 
+interface TelegramCloudStorage {
+  setItem: (key: string, value: string, cb?: (err: Error | null, ok?: boolean) => void) => void;
+  getItem: (key: string, cb: (err: Error | null, value?: string) => void) => void;
+  removeItem: (key: string, cb?: (err: Error | null, ok?: boolean) => void) => void;
+}
+
 interface TelegramWebApp {
   initData: string;
   initDataUnsafe: {
@@ -28,6 +34,7 @@ interface TelegramWebApp {
     notificationOccurred: (type: 'error' | 'success' | 'warning') => void;
     selectionChanged: () => void;
   };
+  CloudStorage?: TelegramCloudStorage;
 }
 
 interface Window {
