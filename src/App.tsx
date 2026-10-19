@@ -1,10 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { SwipeableTask } from './components/SwipeableTask';
 import { ReminderSheet } from './components/ReminderSheet';
 import { Task } from './types';
 import { useAppState } from './hooks/useAppState';
+import { useReminderChecker } from './hooks/useReminderChecker';
 import { Palette } from 'lucide-react';
-import { COLOR_PALETTE, getHeaderTaskColors, isLightColor } from './utils/color';
+import { COLOR_PALETTE, getHeaderTaskColors, isLightColor, lightenColor } from './utils/color';
 import { motion, AnimatePresence } from 'framer-motion';
 import { setHeaderColor } from './lib/telegram';
 
@@ -17,7 +18,6 @@ export default function App() {
 
   const colors = getHeaderTaskColors(baseColor);
   const headerBg = colors.header;
-  const taskBg = colors.task;
 
   useEffect(() => {
     setHeaderColor(headerBg);
@@ -39,6 +39,12 @@ export default function App() {
     updateTasks(prev => prev.map(t => (t.id === id ? { ...t, reminder } : t)));
   };
 
+  const handleReminderTriggered = useCallback((id: string) => {
+    updateTasks(prev => prev.map(t => (t.id === id ? { ...t, reminder: undefined } : t)));
+  }, [updateTasks]);
+
+  useReminderChecker(tasks, handleReminderTriggered);
+
   const addTask = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTaskText.trim()) return;
@@ -51,6 +57,7 @@ export default function App() {
     setNewTaskText('');
   };
 
+  // Сортируем: активные сверху, выполненные снизу
   const sortedTasks = useMemo(() => {
     return [...tasks].sort((a, b) => {
       if (a.done === b.done) return 0;
@@ -67,6 +74,9 @@ export default function App() {
 
   const currentColor = paletteMode === 'base' ? baseColor : bgColor;
   const bgIsLight = isLightColor(bgColor);
+
+  // Считаем количество активных задач (для градиента)
+  const activeTasksCount = sortedTasks.filter(t => !t.done).length;
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden" style={{ backgroundColor: bgColor }}>
@@ -128,17 +138,33 @@ export default function App() {
       </AnimatePresence>
 
       <div className="flex-1 overflow-y-auto pb-24" style={{ backgroundColor: bgColor }}>
-        {sortedTasks.map(task => (
-          <SwipeableTask
-            key={task.id}
-            task={task}
-            onToggle={toggleTask}
-            onDelete={deleteTask}
-            onUpdate={updateTask}
-            onOpenReminder={setEditingReminderId}
-            taskBg={task.done ? headerBg : taskBg}
-          />
-        ))}
+        {sortedTasks.map((task, idx) => {
+          // Если задача выполнена — цвет шапки (самый тёмный)
+          // Иначе — градиент от базового цвета задачи к более светлому
+          let taskBg: string;
+          if (task.done) {
+            taskBg = headerBg;
+          } else {
+            // Считаем индекс только среди активных задач
+            const activeIdx = sortedTasks.slice(0, idx).filter(t => !t.done).length;
+            const lightenPercent = activeTasksCount > 1 
+              ? 5 + (activeIdx / Math.max(1, activeTasksCount - 1)) * 20 
+              : 5;
+            taskBg = lightenColor(baseColor, lightenPercent);
+          }
+
+          return (
+            <SwipeableTask
+              key={task.id}
+              task={task}
+              onToggle={toggleTask}
+              onDelete={deleteTask}
+              onUpdate={updateTask}
+              onOpenReminder={setEditingReminderId}
+              taskBg={taskBg}
+            />
+          );
+        })}
 
         <form onSubmit={addTask} className="px-6 py-4">
           <input

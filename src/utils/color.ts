@@ -70,3 +70,17 @@ export function getHeaderTaskColors(hex: string): { header: string; task: string
   if (found) return { header: found.headerHex, task: found.taskHex };
   return { header: darkenColor(hex, 5), task: lightenColor(hex, 5) };
 }
+
+// Возвращает цвет задачи по её индексу (плавное осветление)
+export function getTaskGradientColor(baseHex: string, index: number, total: number): string {
+  try {
+    // Базовая яркость от 5% (первая задача) до 25% (последняя)
+    // Если задач мало — берём верхнюю границу поменьше
+    const maxLighten = total > 1 ? 20 : 10;
+    const step = total > 1 ? maxLighten / (total - 1) : 0;
+    const percent = 5 + index * step;
+    return lightenColor(baseHex, percent);
+  } catch {
+    return baseHex;
+  }
+}
