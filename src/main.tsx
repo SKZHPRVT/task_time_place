@@ -1,15 +1,12 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App.tsx'
-import './index.css'
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import './index.css';
+import { initTelegram } from './lib/telegram';
 
-if (window.Telegram?.WebApp) {
-  window.Telegram.WebApp.ready();
-  window.Telegram.WebApp.expand();
-}
+initTelegram();
 
-// Показываем ошибку на экране вместо белого экрана
-class ErrorBoundary extends React.Component<{children: React.ReactNode}, {error: Error | null}> {
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { error: Error | null }> {
   constructor(props: any) {
     super(props);
     this.state = { error: null };
@@ -24,7 +21,7 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {error:
           <h1>Ошибка приложения</h1>
           <pre style={{ whiteSpace: 'pre-wrap' }}>{this.state.error.message}</pre>
           <pre style={{ whiteSpace: 'pre-wrap', color: '#888', marginTop: 20 }}>{this.state.error.stack}</pre>
-          <button 
+          <button
             onClick={() => { localStorage.clear(); location.reload(); }}
             style={{ marginTop: 20, padding: 10, background: 'red', color: 'white', border: 'none' }}
           >
@@ -43,4 +40,4 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <App />
     </ErrorBoundary>
   </React.StrictMode>,
-)
+);

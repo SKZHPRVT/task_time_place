@@ -2,21 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
+:root {
+  --tg-viewport-height: 100vh;
+}
+
+html, body {
   margin: 0;
+  padding: 0;
   background-color: #000;
   color: #fff;
-  /* Отключаем скролл всей страницы, скроллить будем только списки */
-  overscroll-behavior: none; 
-  /* Запрещаем выделение текста при свайпах */
-  user-select: none; 
+  overscroll-behavior: none;
+  user-select: none;
   -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  height: var(--tg-viewport-height);
+  overflow: hidden;
 }
 
-/* Кастомный скроллбар, чтобы не портил вид */
+#root {
+  height: var(--tg-viewport-height);
+  display: flex;
+  flex-direction: column;
+}
+
 ::-webkit-scrollbar {
-  width: 0px;
+  width: 0;
   background: transparent;
 }
-
-/* Объявление типов для Telegram */

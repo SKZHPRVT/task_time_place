@@ -2,12 +2,7 @@ import { useState } from 'react';
 import { motion, useAnimation, PanInfo } from 'framer-motion';
 import { Bell, Check, X } from 'lucide-react';
 import { Task } from '../types';
-
-const haptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
-  if (window.Telegram?.WebApp?.HapticFeedback) {
-    window.Telegram.WebApp.HapticFeedback.impactOccurred(style);
-  }
-};
+import { haptic } from '../lib/telegram';
 
 interface SwipeableTaskProps {
   task: Task;
@@ -23,7 +18,7 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate, taskBg }: Sw
 
   const handleDragEnd = async (_event: any, info: PanInfo) => {
     const threshold = 80;
-    
+
     if (info.offset.x > threshold) {
       haptic('medium');
       onToggle(task.id);
@@ -63,11 +58,11 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate, taskBg }: Sw
           <input
             autoFocus
             defaultValue={task.text}
-            onBlur={(e) => {
+            onBlur={e => {
               setIsEditing(false);
               onUpdate(task.id, e.target.value);
             }}
-            onKeyDown={(e) => {
+            onKeyDown={e => {
               if (e.key === 'Enter') e.currentTarget.blur();
             }}
             className={`bg-transparent outline-none w-full text-xl font-medium ${
@@ -75,7 +70,7 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate, taskBg }: Sw
             }`}
           />
         ) : (
-          <div 
+          <div
             onClick={() => setIsEditing(true)}
             className={`text-xl w-full truncate font-medium ${
               task.done ? 'line-through text-gray-300' : 'text-gray-900'
