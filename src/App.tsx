@@ -1,23 +1,15 @@
 import { useState, useEffect, useMemo } from 'react';
 import { SwipeableTask } from './components/SwipeableTask';
 import { Task } from './types';
-import { useLocalStorage } from './hooks/useLocalStorage';
+import { useAppState } from './hooks/useAppState';
 import { Palette } from 'lucide-react';
 import { COLOR_PALETTE, darkenColor, lightenColor } from './utils/color';
 import { motion, AnimatePresence } from 'framer-motion';
 import { setHeaderColor } from './lib/telegram';
 
 export default function App() {
-  const [baseColor, setBaseColor] = useLocalStorage('clear_base_color', '#71717a');
+  const { tasks, baseColor, updateTasks, setBaseColor } = useAppState();
   const [showPalette, setShowPalette] = useState(false);
-
-  const [tasks, setTasks] = useLocalStorage<Task[]>('clear_tasks', [
-    { id: 'tut-1', text: '👉 Свайпни вправо, чтобы выполнить', done: false },
-    { id: 'tut-2', text: '👈 Свайпни влево, чтобы удалить', done: false },
-    { id: 'tut-3', text: '👆 Нажми на текст, чтобы изменить', done: false },
-    { id: 'tut-4', text: 'Это выполнено (свайп вправо)', done: true },
-  ]);
-
   const [newTaskText, setNewTaskText] = useState('');
 
   // 5% разница цветов
@@ -30,19 +22,15 @@ export default function App() {
   }, [headerBg]);
 
   const toggleTask = (id: string) => {
-    setTasks(tasks.map(t => (t.id === id ? { ...t, done: !t.done } : t)));
+    updateTasks(prev => prev.map(t => (t.id === id ? { ...t, done: !t.done } : t)));
   };
 
   const deleteTask = (id: string) => {
-    try {
-      setTasks(tasks.filter(t => t.id !== id));
-    } catch (e) {
-      console.error('Delete error:', e);
-    }
+    updateTasks(prev => prev.filter(t => t.id !== id));
   };
 
   const updateTask = (id: string, text: string) => {
-    setTasks(tasks.map(t => (t.id === id ? { ...t, text } : t)));
+    updateTasks(prev => prev.map(t => (t.id === id ? { ...t, text } : t)));
   };
 
   const addTask = (e: React.FormEvent) => {
@@ -55,11 +43,11 @@ export default function App() {
       done: false,
     };
 
-    setTasks([newTask, ...tasks]);
+    updateTasks(prev => [newTask, ...prev]);
     setNewTaskText('');
   };
 
-  // Сортируем задачи: сначала активные, потом выполненные
+  // Сортируем: активные сверху, выполненные снизу
   const sortedTasks = useMemo(() => {
     return [...tasks].sort((a, b) => {
       if (a.done === b.done) return 0;
