@@ -27,7 +27,6 @@ html, body {
   display: flex;
   flex-direction: column;
   padding-top: calc(var(--tg-safe-area-top) + var(--tg-content-safe-area-top) + 16px);
-  /* Фон #root теперь прозрачный — его задает App.tsx */
   background-color: transparent;
 }
 

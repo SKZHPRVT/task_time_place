@@ -12,13 +12,15 @@ function applyViewportHeight(): void {
 
 export function setHeaderColor(color: string): void {
   if (!tg) return;
-  // Проверяем что метод существует
   if (typeof tg.setHeaderColor === 'function') {
     safeCall(() => tg.setHeaderColor(color));
   }
   if (typeof tg.setBackgroundColor === 'function') {
     safeCall(() => tg.setBackgroundColor(color));
   }
+  // Красим body и html в тот же цвет
+  document.documentElement.style.backgroundColor = color;
+  document.body.style.backgroundColor = color;
 }
 
 export function initTelegram(): void {
@@ -33,11 +35,8 @@ export function initTelegram(): void {
   document.body.classList.add('is-telegram');
 
   safeCall(() => tg.ready());
-  safeCall(() => tg.expand());
+  safeCall(() => tg.expand()); // <-- Только expand, без requestFullscreen
 
-  if (typeof tg.requestFullscreen === 'function') {
-    safeCall(() => tg.requestFullscreen!());
-  }
   if (typeof tg.disableVerticalSwipes === 'function') {
     safeCall(() => tg.disableVerticalSwipes!());
   }

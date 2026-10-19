@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SwipeableTask } from './components/SwipeableTask';
 import { Task } from './types';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { Palette } from 'lucide-react';
 import { COLOR_PALETTE, darkenColor, lightenColor } from './utils/color';
 import { motion, AnimatePresence } from 'framer-motion';
+import { setHeaderColor } from './lib/telegram';
 
 export default function App() {
   const [baseColor, setBaseColor] = useLocalStorage('clear_base_color', '#71717a');
@@ -23,12 +24,21 @@ export default function App() {
   const taskBg = lightenColor(baseColor, 7);
   const doneTaskBg = darkenColor(baseColor, 30);
 
+  // Синхронизируем цвет шапки Telegram с нашим
+  useEffect(() => {
+    setHeaderColor(headerBg);
+  }, [headerBg]);
+
   const toggleTask = (id: string) => {
     setTasks(tasks.map(t => (t.id === id ? { ...t, done: !t.done } : t)));
   };
 
   const deleteTask = (id: string) => {
-    setTasks(tasks.filter(t => t.id !== id));
+    try {
+      setTasks(tasks.filter(t => t.id !== id));
+    } catch (e) {
+      console.error('Delete error:', e);
+    }
   };
 
   const updateTask = (id: string, text: string) => {
