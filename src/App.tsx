@@ -9,8 +9,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { setHeaderColor } from './lib/telegram';
 
 export default function App() {
-  const { tasks, baseColor, updateTasks, setBaseColor } = useAppState();
+  const { tasks, baseColor, bgColor, updateTasks, setBaseColor, setBgColor } = useAppState();
   const [showPalette, setShowPalette] = useState(false);
+  const [paletteMode, setPaletteMode] = useState<'base' | 'bg'>('base');
   const [newTaskText, setNewTaskText] = useState('');
   const [editingReminderId, setEditingReminderId] = useState<string | null>(null);
 
@@ -58,8 +59,18 @@ export default function App() {
 
   const editingTask = editingReminderId ? tasks.find(t => t.id === editingReminderId) : null;
 
+  const handlePaletteSelect = (hex: string) => {
+    if (paletteMode === 'base') setBaseColor(hex);
+    else setBgColor(hex);
+  };
+
+  const currentColor = paletteMode === 'base' ? baseColor : bgColor;
+
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div
+      className="flex-1 flex flex-col overflow-hidden"
+      style={{ backgroundColor: bgColor }}
+    >
       <div
         className="pb-4 px-6 transition-colors duration-300 flex justify-between items-end shrink-0"
         style={{ backgroundColor: headerBg }}
@@ -81,16 +92,38 @@ export default function App() {
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden bg-zinc-900 border-b border-zinc-800 shrink-0"
           >
+            {/* Переключатель: шапка/задачи vs фон */}
+            <div className="flex gap-2 px-6 pt-4">
+              <button
+                onClick={() => setPaletteMode('base')}
+                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  paletteMode === 'base'
+                    ? 'bg-white text-black'
+                    : 'bg-zinc-800 text-zinc-400'
+                }`}
+              >
+                Шапка и задачи
+              </button>
+              <button
+                onClick={() => setPaletteMode('bg')}
+                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  paletteMode === 'bg'
+                    ? 'bg-white text-black'
+                    : 'bg-zinc-800 text-zinc-400'
+                }`}
+              >
+                Фон
+              </button>
+            </div>
+
+            {/* Палитра */}
             <div className="flex gap-3 px-6 py-4 overflow-x-auto">
               {COLOR_PALETTE.map((c: { name: string; hex: string }) => (
                 <button
                   key={c.hex}
-                  onClick={() => {
-                    setBaseColor(c.hex);
-                    setShowPalette(false);
-                  }}
+                  onClick={() => handlePaletteSelect(c.hex)}
                   className={`w-10 h-10 rounded-full shrink-0 transition-transform active:scale-90 ${
-                    baseColor === c.hex ? 'ring-2 ring-white ring-offset-2 ring-offset-zinc-900' : ''
+                    currentColor === c.hex ? 'ring-2 ring-white ring-offset-2 ring-offset-zinc-900' : ''
                   }`}
                   style={{ backgroundColor: c.hex }}
                 />
@@ -100,7 +133,10 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <div className="flex-1 overflow-y-auto pb-24 bg-black">
+      <div
+        className="flex-1 overflow-y-auto pb-24"
+        style={{ backgroundColor: bgColor }}
+      >
         {sortedTasks.map(task => (
           <SwipeableTask
             key={task.id}
@@ -113,7 +149,7 @@ export default function App() {
           />
         ))}
 
-        <form onSubmit={addTask} className="px-6 py-4 border-b border-zinc-900">
+        <form onSubmit={addTask} className="px-6 py-4">
           <input
             type="text"
             value={newTaskText}
