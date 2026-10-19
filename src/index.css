@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  background-color: #000;
+  color: #fff;
+  /* Отключаем скролл всей страницы, скроллить будем только списки */
+  overscroll-behavior: none; 
+  /* Запрещаем выделение текста при свайпах */
+  user-select: none; 
+  -webkit-user-select: none;
+}
+
+/* Кастомный скроллбар, чтобы не портил вид */
+::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
+}
+
+/* Объявление типов для Telegram */
