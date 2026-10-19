@@ -16,6 +16,12 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate, taskBg }: Sw
   const [isEditing, setIsEditing] = useState(false);
   const controls = useAnimation();
 
+  // Отладка: если задача битая, покажем это в консоли
+  if (!task || typeof task !== 'object') {
+    console.error('[SwipeableTask] Invalid task:', task);
+    return null;
+  }
+
   const handleDragEnd = async (_event: any, info: PanInfo) => {
     const threshold = 80;
 
@@ -57,7 +63,7 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate, taskBg }: Sw
         {isEditing ? (
           <input
             autoFocus
-            defaultValue={task.text}
+            defaultValue={task.text || ''}
             onBlur={e => {
               setIsEditing(false);
               onUpdate(task.id, e.target.value);
