@@ -31,7 +31,14 @@ export function FolderSheet({ isOpen, folders, activeFolderId, onClose, onSwitch
     setNewName('');
     setIsCreating(false);
     haptic('medium');
-    onClose();
+    // Небольшая задержка, чтобы React успел обновить activeFolderId перед закрытием
+    setTimeout(() => onClose(), 50);
+  };
+
+  const handleSwitch = (id: string) => {
+    onSwitch(id);
+    haptic('light');
+    setTimeout(() => onClose(), 50);
   };
 
   return (
@@ -71,8 +78,7 @@ export function FolderSheet({ isOpen, folders, activeFolderId, onClose, onSwitch
                   value={newName}
                   onChange={e => setNewName(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') handleCreate(); }}
-                  placeholder="Например, Работа"
-                  className="w-full bg-zinc-800 text-white text-lg rounded-xl px-4 py-3 outline-none placeholder-zinc-500"
+                  className="w-full bg-zinc-800 text-white text-lg rounded-xl px-4 py-3 outline-none"
                 />
                 <div className="flex gap-2 mt-4">
                   <button
@@ -108,11 +114,7 @@ export function FolderSheet({ isOpen, folders, activeFolderId, onClose, onSwitch
                       className="flex items-center justify-between px-6 py-3 border-b border-zinc-800"
                     >
                       <button
-                        onClick={() => {
-                          onSwitch(folder.id);
-                          onClose();
-                          haptic('light');
-                        }}
+                        onClick={() => handleSwitch(folder.id)}
                         className="flex-1 text-left text-white text-lg"
                       >
                         {folder.name}
