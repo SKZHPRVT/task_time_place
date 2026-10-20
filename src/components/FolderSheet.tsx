@@ -27,18 +27,12 @@ export function FolderSheet({ isOpen, folders, activeFolderId, onClose, onSwitch
       setIsCreating(false);
       return;
     }
-    onCreate(newName.trim());
+    const trimmed = newName.trim();
     setNewName('');
     setIsCreating(false);
+    onCreate(trimmed);
     haptic('medium');
-    // Небольшая задержка, чтобы React успел обновить activeFolderId перед закрытием
-    setTimeout(() => onClose(), 50);
-  };
-
-  const handleSwitch = (id: string) => {
-    onSwitch(id);
-    haptic('light');
-    setTimeout(() => onClose(), 50);
+    onClose(); // закрываем сразу, без таймаута
   };
 
   return (
@@ -114,7 +108,11 @@ export function FolderSheet({ isOpen, folders, activeFolderId, onClose, onSwitch
                       className="flex items-center justify-between px-6 py-3 border-b border-zinc-800"
                     >
                       <button
-                        onClick={() => handleSwitch(folder.id)}
+                        onClick={() => {
+                          onSwitch(folder.id);
+                          haptic('light');
+                          onClose();
+                        }}
                         className="flex-1 text-left text-white text-lg"
                       >
                         {folder.name}
