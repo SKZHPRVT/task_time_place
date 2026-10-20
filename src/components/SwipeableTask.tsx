@@ -52,7 +52,7 @@ export function SwipeableTask({
       controls.start({ x: 0, transition: { type: 'spring', stiffness: 300, damping: 25 } });
     } else if (info.offset.x < -threshold) {
       haptic('heavy');
-      await controls.start({ x: -400, opacity: 0, transition: { duration: 0.2 } });
+      // 🆕 НЕ ждём анимацию — AnimatePresence в родителе сделает exit
       onDelete(task.id);
     } else {
       controls.start({ x: 0, transition: { type: 'spring', stiffness: 300, damping: 25 } });

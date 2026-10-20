@@ -64,52 +64,46 @@ export default function App() {
 
   useReminderChecker(activeFolder.tasks, handleReminderTriggered);
 
-  // 🆕 Функция создания задачи с защитой от двойного вызова
+  // 🆕 Защита от дублей
   const commitNewTask = () => {
     if (isCommittingRef.current) return;
-    if (!newTaskText.trim()) return;
-    
+    const trimmed = newTaskText.trim();
+    if (!trimmed) return;
+
     isCommittingRef.current = true;
     const newTask: Task = {
-      id: Date.now().toString(),
-      text: newTaskText.trim(),
+      id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, // уникальный ID
+      text: trimmed,
       done: false,
     };
     updateFolderTasks(activeFolder.id, prev => [newTask, ...prev]);
     setNewTaskText('');
-    
-    // Снимаем защиту чуть позже, когда состояние обновится
-    setTimeout(() => { isCommittingRef.current = false; }, 100);
+    inputRef.current?.blur();
+
+    // Снимаем защиту через 300ms
+    setTimeout(() => { isCommittingRef.current = false; }, 300);
   };
 
   const addTask = (e: React.FormEvent) => {
     e.preventDefault();
     commitNewTask();
-    inputRef.current?.blur();
-  };
-
-  // 🆕 Убираем создание задачи на blur, чтобы избежать дублей
-  const handleBlur = () => {
-    // Ничего не делаем — задача создастся только по Enter, тапу на папку или пустое место
   };
 
   // 🆕 Тап на пустое место
   const handleEmptyTap = () => {
     if (newTaskText.trim()) {
       commitNewTask();
-      inputRef.current?.blur();
     } else {
       haptic('light');
       inputRef.current?.focus();
     }
   };
 
-  // 🆕 Тап на папку/палитру — если есть текст, создать задачу и НЕ открывать панель
+  // 🆕 Тап на папку/палитру
   const handleActionClick = (action: () => void) => {
     if (newTaskText.trim()) {
       commitNewTask();
-      inputRef.current?.blur();
-      return; // блокируем открытие
+      return;
     }
     action();
   };
@@ -201,35 +195,46 @@ export default function App() {
       </AnimatePresence>
 
       <div className="flex-1 overflow-y-auto pb-24" style={{ backgroundColor: bgColor }}>
-        {sortedTasks.map((task, idx) => {
-          let taskBg: string;
-          if (task.done) {
-            taskBg = headerBg;
-          } else {
-            const activeIdx = sortedTasks.slice(0, idx).filter(t => !t.done).length;
-            const lightenPercent = activeTasksCount > 1
-              ? -5 + (activeIdx / Math.max(1, activeTasksCount - 1)) * 30
-              : -5;
-            taskBg = lightenPercent >= 0
-              ? lightenColor(baseColor, lightenPercent)
-              : darkenColor(baseColor, Math.abs(lightenPercent));
-          }
+        {/* 🆕 AnimatePresence — чтобы задачи анимационно исчезали */}
+        <AnimatePresence initial={false}>
+          {sortedTasks.map((task, idx) => {
+            let taskBg: string;
+            if (task.done) {
+              taskBg = headerBg;
+            } else {
+              const activeIdx = sortedTasks.slice(0, idx).filter(t => !t.done).length;
+              const lightenPercent = activeTasksCount > 1
+                ? -5 + (activeIdx / Math.max(1, activeTasksCount - 1)) * 30
+                : -5;
+              taskBg = lightenPercent >= 0
+                ? lightenColor(baseColor, lightenPercent)
+                : darkenColor(baseColor, Math.abs(lightenPercent));
+            }
 
-          return (
-            <SwipeableTask
-              key={task.id}
-              task={task}
-              onToggle={toggleTask}
-              onDelete={deleteTask}
-              onUpdate={updateTask}
-              onOpenReminder={setEditingReminderId}
-              taskBg={taskBg}
-              textColor={taskTextColor}
-              isEditingExternal={editingTaskId === task.id}
-              onEditingDone={() => setEditingTaskId(null)}
-            />
-          );
-        })}
+            return (
+              <motion.div
+                key={task.id}
+                layout
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <SwipeableTask
+                  task={task}
+                  onToggle={toggleTask}
+                  onDelete={deleteTask}
+                  onUpdate={updateTask}
+                  onOpenReminder={setEditingReminderId}
+                  taskBg={taskBg}
+                  textColor={taskTextColor}
+                  isEditingExternal={editingTaskId === task.id}
+                  onEditingDone={() => setEditingTaskId(null)}
+                />
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
 
         <form onSubmit={addTask} className="px-6 py-4">
           <input
