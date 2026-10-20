@@ -94,21 +94,24 @@ export default function App() {
   return (
     <div className="flex-1 flex flex-col overflow-hidden" style={{ backgroundColor: bgColor }}>
       <div
-        className="pb-4 px-6 transition-colors duration-300 flex justify-between items-center shrink-0"
+        className="pb-4 px-6 transition-colors duration-300 flex justify-between items-start shrink-0 gap-2"
         style={{ backgroundColor: headerBg }}
       >
         <button
           onClick={() => setShowFolders(true)}
           className="min-w-0 flex-1 text-left active:opacity-60 transition-opacity"
         >
-          <h1 className="text-5xl font-bold text-white tracking-tight truncate">
+          <h1
+            className="font-bold text-white tracking-tight break-words leading-tight"
+            style={{ fontSize: 'clamp(1.5rem, 6vw, 3rem)' }}
+          >
             {activeFolder.name}
           </h1>
         </button>
 
         <button
           onClick={() => setShowPalette(!showPalette)}
-          className="p-2 rounded-full active:bg-white/20 transition-colors shrink-0 ml-2"
+          className="p-2 rounded-full active:bg-white/20 transition-colors shrink-0 mt-1"
         >
           <Palette size={24} className="text-white/80" />
         </button>
