@@ -55,81 +55,102 @@ function isValidState(state: any): state is AppState {
   }
 }
 
-function loadFromLocal(): AppState {
+function loadFromLocal(): AppState | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_STATE;
+    if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (isValidState(parsed)) {
-      // Если old state без updatedAt — ставим текущее время
-      if (typeof parsed.updatedAt !== 'number') {
-        parsed.updatedAt = Date.now();
-      }
+      if (typeof parsed.updatedAt !== 'number') parsed.updatedAt = Date.now();
       return parsed;
     }
-    return DEFAULT_STATE;
+    return null;
   } catch {
-    return DEFAULT_STATE;
+    return null;
   }
 }
 
 export function useAppState() {
-  const [state, setState] = useState<AppState>(() => loadFromLocal());
-  const lastSyncedRef = useRef<string>(JSON.stringify(state));
-  const isInitializingRef = useRef(true);
+  const [state, setState] = useState<AppState>(() => loadFromLocal() ?? DEFAULT_STATE);
+  const initializedRef = useRef(false);
 
-  // Фоновая синхронизация с CloudStorage (только при старте)
+  // Синхронизация при старте
   useEffect(() => {
+    if (initializedRef.current) return;
+    initializedRef.current = true;
+
     let cancelled = false;
+
     async function syncCloud() {
+      const local = loadFromLocal();
+
       if (!isTelegram) {
-        isInitializingRef.current = false;
         return;
       }
+
       const cloudRaw = await cloudGetItem(CLOUD_KEY);
       if (cancelled) return;
 
+      let cloud: AppState | null = null;
       if (cloudRaw) {
         try {
           const parsed = JSON.parse(cloudRaw);
           if (isValidState(parsed)) {
             if (typeof parsed.updatedAt !== 'number') parsed.updatedAt = 0;
-            const localUpdatedAt = state.updatedAt;
-
-            // 🆕 Побеждает тот, у кого updatedAt свежее
-            if (parsed.updatedAt > localUpdatedAt) {
-              console.log('[State] Cloud is newer, applying');
-              setState(parsed);
-              lastSyncedRef.current = JSON.stringify(parsed);
-              try { localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed)); } catch {}
-            } else {
-              console.log('[State] Local is newer or equal, keeping local');
-            }
+            cloud = parsed;
           }
         } catch {}
       }
-      isInitializingRef.current = false;
+
+      // Сценарии:
+      // 1. Есть локальные данные, нет облачных → пишем локальные в облако
+      // 2. Есть облачные, нет локальных → применяем облачные
+      // 3. Оба есть → побеждает более свежий по updatedAt
+      // 4. Нет ни там, ни там → дефолт (уже стоит)
+
+      if (local && !cloud) {
+        console.log('[State] Local exists, cloud empty → pushing to cloud');
+        const str = JSON.stringify(local);
+        await cloudSetItem(CLOUD_KEY, str);
+        return;
+      }
+
+      if (!local && cloud) {
+        console.log('[State] Local empty, cloud exists → applying cloud');
+        setState(cloud);
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cloud)); } catch {}
+        return;
+      }
+
+      if (local && cloud) {
+        if (cloud.updatedAt > local.updatedAt) {
+          console.log('[State] Cloud is newer → applying cloud');
+          setState(cloud);
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cloud)); } catch {}
+        } else {
+          console.log('[State] Local is newer or equal → pushing to cloud');
+          const str = JSON.stringify(local);
+          await cloudSetItem(CLOUD_KEY, str);
+        }
+      }
     }
+
     syncCloud();
     return () => { cancelled = true; };
   }, []);
 
-  // Сохранение при каждом изменении
+  // Сохранение при каждом изменении folders/activeFolderId
   useEffect(() => {
-    if (isInitializingRef.current) return;
-    const newState = { ...state, updatedAt: Date.now() };
-    // Обновляем стейт, чтобы updatedAt применился (только если это не вызывает цикл)
-    if (state.updatedAt !== newState.updatedAt) {
-      // Не обновляем здесь стейт, чтобы не было бесконечного цикла,
-      // а просто сохраняем новую версию
-    }
+    if (!initializedRef.current) return;
+
+    // Обновляем updatedAt
+    const now = Date.now();
+    const newState: AppState = { ...state, updatedAt: now };
+
     const str = JSON.stringify(newState);
-    if (str === lastSyncedRef.current) return;
-    lastSyncedRef.current = str;
     try { localStorage.setItem(STORAGE_KEY, str); } catch {}
     if (isTelegram) cloudSetItem(CLOUD_KEY, str).catch(() => {});
-    // Сохраняем updatedAt в стейт — но только если реально изменились данные
-    setState(prev => ({ ...prev, updatedAt: newState.updatedAt }));
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.folders, state.activeFolderId]);
 
@@ -138,6 +159,7 @@ export function useAppState() {
   const updateFolderTasks = useCallback((folderId: string, updater: (tasks: Task[]) => Task[]) => {
     setState(prev => ({
       ...prev,
+      updatedAt: Date.now(),
       folders: prev.folders.map(f =>
         f.id === folderId ? { ...f, tasks: updater(f.tasks) } : f
       ),
@@ -147,6 +169,7 @@ export function useAppState() {
   const setFolderColor = useCallback((folderId: string, key: 'baseColor' | 'bgColor', color: string) => {
     setState(prev => ({
       ...prev,
+      updatedAt: Date.now(),
       folders: prev.folders.map(f =>
         f.id === folderId ? { ...f, [key]: color } : f
       ),
@@ -154,7 +177,7 @@ export function useAppState() {
   }, []);
 
   const switchFolder = useCallback((folderId: string) => {
-    setState(prev => ({ ...prev, activeFolderId: folderId }));
+    setState(prev => ({ ...prev, updatedAt: Date.now(), activeFolderId: folderId }));
   }, []);
 
   const createFolder = useCallback((name: string) => {
@@ -168,6 +191,7 @@ export function useAppState() {
     };
     setState(prev => ({
       ...prev,
+      updatedAt: Date.now(),
       folders: [...prev.folders, newFolder],
       activeFolderId: id,
     }));
@@ -181,12 +205,14 @@ export function useAppState() {
         const defaultFolder = makeDefaultFolder();
         return {
           ...prev,
+          updatedAt: Date.now(),
           folders: [defaultFolder],
           activeFolderId: defaultFolder.id,
         };
       }
       return {
         ...prev,
+        updatedAt: Date.now(),
         folders: newFolders,
         activeFolderId: prev.activeFolderId === folderId ? newFolders[0].id : prev.activeFolderId,
       };
