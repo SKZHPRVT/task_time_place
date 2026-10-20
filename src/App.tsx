@@ -99,11 +99,16 @@ export default function App() {
       >
         <button
           onClick={() => setShowFolders(true)}
-          className="min-w-0 flex-1 text-left active:opacity-60 transition-opacity"
+          className="text-left active:opacity-60 transition-opacity"
+          style={{ maxWidth: 'calc(100% - 56px)' }}
         >
           <h1
-            className="font-bold text-white tracking-tight break-words leading-tight"
-            style={{ fontSize: 'clamp(1.5rem, 6vw, 3rem)' }}
+            className="font-bold text-white tracking-tight leading-tight"
+            style={{
+              fontSize: 'clamp(1.25rem, 5vw, 3rem)',
+              wordBreak: 'break-word',
+              overflowWrap: 'anywhere',
+            }}
           >
             {activeFolder.name}
           </h1>
