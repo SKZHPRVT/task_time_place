@@ -14,11 +14,10 @@ const DEFAULT_FOLDER: Folder = {
   baseColor: '#71717a',
   bgColor: '#000000',
   tasks: [
-    { id: 'tut-1', text: '👉 Свайпни вправо, чтобы выполнить', done: false },
-    { id: 'tut-2', text: '👈 Свайпни влево, чтобы удалить', done: false },
-    { id: 'tut-3', text: '👆 Нажми на текст, чтобы изменить', done: false },
-    { id: 'tut-4', text: '📁 Тап по названию в шапке — создать папку', done: false },
-    { id: 'tut-5', text: 'Это выполнено (свайп вправо)', done: true },
+    { id: 'tut-1', text: '👉 Свайп вправо — выполнить', done: false },
+    { id: 'tut-2', text: '👈 Свайп влево — удалить', done: false },
+    { id: 'tut-3', text: '👆 Тап по тексту — изменить', done: false },
+    { id: 'tut-4', text: '📁 Тап по шапке — создать папку', done: false },
   ],
 };
 
