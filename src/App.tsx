@@ -88,6 +88,13 @@ export default function App() {
     commitNewTask();
   };
 
+  // 🆕 При потере фокуса (тап по другой задаче) — создаём таск
+  const handleBlur = () => {
+    if (textRef.current.trim()) {
+      commitNewTask();
+    }
+  };
+
   const handleEmptyTap = () => {
     if (textRef.current.trim()) {
       commitNewTask();
@@ -232,15 +239,16 @@ export default function App() {
           })}
         </AnimatePresence>
 
-        <form onSubmit={addTask} className="px-6 py-4">
+        <form onSubmit={addTask} className="px-6 py-4 relative z-20">
           <input
             ref={inputRef}
             type="text"
             value={newTaskText}
             onChange={e => {
               setNewTaskText(e.target.value);
-              textRef.current = e.target.value; // 🆕 Синхронно обновляем ref
+              textRef.current = e.target.value;
             }}
+            onBlur={handleBlur}
             placeholder="+ Новая задача"
             className={`w-full bg-transparent text-xl outline-none ${
               bgIsLight ? 'text-zinc-700 placeholder-zinc-500' : 'text-zinc-400 placeholder-zinc-600'
@@ -272,6 +280,18 @@ export default function App() {
         onSave={reminder => editingReminderId && setReminder(editingReminderId, reminder)}
         onRemove={() => editingReminderId && setReminder(editingReminderId, undefined)}
       />
+
+      {/* 🆕 Оверлей: пока есть текст в поле — любой тап только подтверждает создание */}
+      {newTaskText.trim().length > 0 && (
+        <div
+          onClick={() => {
+            haptic('light');
+            commitNewTask();
+          }}
+          className="fixed inset-0 z-10"
+          style={{ backgroundColor: 'transparent' }}
+        />
+      )}
     </div>
   );
 }
