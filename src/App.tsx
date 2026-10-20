@@ -5,7 +5,7 @@ import { FolderSheet } from './components/FolderSheet';
 import { Task, Folder } from './types';
 import { useAppState } from './hooks/useAppState';
 import { useReminderChecker } from './hooks/useReminderChecker';
-import { Palette, ChevronDown } from 'lucide-react';
+import { Palette } from 'lucide-react';
 import { COLOR_PALETTE, getHeaderTaskColors, isLightColor, lightenColor, darkenColor } from './utils/color';
 import { motion, AnimatePresence } from 'framer-motion';
 import { setHeaderColor } from './lib/telegram';
@@ -111,13 +111,6 @@ export default function App() {
         
         {/* Правая часть: стрелка (ближе к палитре) + палитра */}
         <div className="flex items-center gap-1 shrink-0 ml-2">
-          <button
-            onClick={() => setShowFolders(true)}
-            className="p-2 active:opacity-60 transition-opacity"
-            aria-label="Выбрать папку"
-          >
-            <ChevronDown size={24} className="text-white/60" />
-          </button>
           <button
             onClick={() => setShowPalette(!showPalette)}
             className="p-2 rounded-full active:bg-white/20 transition-colors"
