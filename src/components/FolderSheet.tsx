@@ -1,8 +1,8 @@
-import { useState } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { Folder } from '../types';
 import { Plus, X, Check } from 'lucide-react';
 import { haptic } from '../lib/telegram';
+import { getHeaderTaskColors, isLightColor } from '../utils/color';
 
 interface FolderSheetProps {
   isOpen: boolean;
@@ -20,7 +20,6 @@ export function FolderSheet({ isOpen, folders, activeFolderId, onClose, onSwitch
   };
 
   const handleCreateClick = () => {
-    // Используем нативный prompt браузера (одно окно, не ломает стейт)
     const name = window.prompt('Название новой папки:');
     if (name && name.trim()) {
       onCreate(name.trim());
@@ -68,37 +67,45 @@ export function FolderSheet({ isOpen, folders, activeFolderId, onClose, onSwitch
             </div>
 
             <div className="max-h-[50vh] overflow-y-auto">
-              {folders.map(folder => (
-                <div
-                  key={folder.id}
-                  className="flex items-center justify-between px-6 py-3 border-b border-zinc-800"
-                >
-                  <button
-                    onClick={() => {
-                      onSwitch(folder.id);
-                      haptic('light');
-                      onClose();
-                    }}
-                    className="flex-1 text-left text-white text-lg"
+              {folders.map(folder => {
+                const colors = getHeaderTaskColors(folder.baseColor);
+                const headerBg = colors.header;
+                const light = isLightColor(folder.baseColor);
+                const textColor = light ? 'text-zinc-900' : 'text-white';
+
+                return (
+                  <div
+                    key={folder.id}
+                    className="flex items-center justify-between px-6 py-3 border-b border-zinc-800"
+                    style={{ backgroundColor: headerBg }}
                   >
-                    {folder.name}
-                    {folder.id === activeFolderId && (
-                      <Check size={16} className="inline ml-2 text-green-500" />
-                    )}
-                  </button>
-                  {folders.length > 1 && (
                     <button
                       onClick={() => {
-                        onDelete(folder.id);
-                        haptic('heavy');
+                        onSwitch(folder.id);
+                        haptic('light');
+                        onClose();
                       }}
-                      className="p-2 active:opacity-50"
+                      className={`flex-1 text-left text-lg font-medium ${textColor}`}
                     >
-                      <X size={18} className="text-red-500" />
+                      {folder.name}
+                      {folder.id === activeFolderId && (
+                        <Check size={16} className={`inline ml-2 ${light ? 'text-green-700' : 'text-green-400'}`} />
+                      )}
                     </button>
-                  )}
-                </div>
-              ))}
+                    {folders.length > 1 && (
+                      <button
+                        onClick={() => {
+                          onDelete(folder.id);
+                          haptic('heavy');
+                        }}
+                        className="p-2 active:opacity-50"
+                      >
+                        <X size={18} className={light ? 'text-red-700' : 'text-red-400'} />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </motion.div>
         </>
