@@ -85,7 +85,7 @@ export function FolderSheet({ isOpen, folders, activeFolderId, onClose, onSwitch
                         haptic('light');
                         onClose();
                       }}
-                      className={`flex-1 min-w-0 text-left text-lg font-medium break-all ${textColor}`}
+                      className={`flex-1 min-w-0 text-left text-lg font-medium break-words ${textColor}`}
                     >
                       {folder.name}
                       {folder.id === activeFolderId && (

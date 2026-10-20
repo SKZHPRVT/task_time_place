@@ -140,7 +140,7 @@ export default function App() {
           className="min-w-0 flex-1 text-left active:opacity-60 transition-opacity"
         >
           <h1
-            className="font-bold text-white tracking-tight leading-tight break-all"
+            className="font-bold text-white tracking-tight leading-tight"
             style={{
               fontSize:
                 activeFolder.name.length <= 8
@@ -150,6 +150,8 @@ export default function App() {
                   : activeFolder.name.length <= 25
                   ? '2rem'
                   : '1.5rem',
+              wordBreak: 'normal',
+              overflowWrap: 'break-word',
             }}
           >
             {activeFolder.name}
