@@ -89,12 +89,25 @@ export default function App() {
     }
   };
 
-  // 🆕 При тапе на шапку/пустое место — фиксируем задачу и убираем клавиатуру
-  const handleOutsideTap = () => {
+  // 🆕 Тап на пустое место — если есть текст, создать задачу; если нет — фокус на поле
+  const handleEmptyTap = () => {
     if (newTaskText.trim()) {
       commitNewTask();
+      inputRef.current?.blur();
+    } else {
+      haptic('light');
+      inputRef.current?.focus();
     }
-    inputRef.current?.blur();
+  };
+
+  // 🆕 Тап на папку/палитру — если есть текст, создать задачу и НЕ открывать панель
+  const handleActionClick = (action: () => void) => {
+    if (newTaskText.trim()) {
+      commitNewTask();
+      inputRef.current?.blur();
+      return; // блокируем открытие панели
+    }
+    action();
   };
 
   const sortedTasks = useMemo(() => {
@@ -122,10 +135,7 @@ export default function App() {
       >
         {/* Кнопка открытия папок — сначала фиксируем ввод */}
         <button
-          onClick={() => {
-            handleOutsideTap();
-            setShowFolders(true);
-          }}
+          onClick={() => handleActionClick(() => setShowFolders(true))}
           className="min-w-0 flex-1 text-left active:opacity-60 transition-opacity"
         >
           <h1
@@ -137,10 +147,7 @@ export default function App() {
         </button>
 
         <button
-          onClick={() => {
-            handleOutsideTap();
-            setShowPalette(!showPalette);
-          }}
+          onClick={() => handleActionClick(() => setShowPalette(!showPalette))}
           className="p-2 rounded-full active:bg-white/20 transition-colors shrink-0 mt-1"
         >
           <Palette size={24} className="text-white/80" />
@@ -236,11 +243,9 @@ export default function App() {
           />
         </form>
 
-        {/* Пустая область — фиксирует ввод и убирает фокус */}
+        {/* Пустая область — фиксирует ввод или фокусирует поле */}
         <div
-          onClick={() => {
-            handleOutsideTap();
-          }}
+          onClick={handleEmptyTap}
           className="min-h-[50vh] cursor-pointer"
         />
       </div>
