@@ -15,24 +15,18 @@ interface FolderSheetProps {
 }
 
 export function FolderSheet({ isOpen, folders, activeFolderId, onClose, onSwitch, onCreate, onDelete }: FolderSheetProps) {
-  const [isCreating, setIsCreating] = useState(false);
-  const [newName, setNewName] = useState('');
-
   const handleDragEnd = (_e: any, info: PanInfo) => {
     if (info.offset.y > 100) onClose();
   };
 
-  const handleCreate = () => {
-    if (!newName.trim()) {
-      setIsCreating(false);
-      return;
+  const handleCreateClick = () => {
+    // Используем нативный prompt браузера (одно окно, не ломает стейт)
+    const name = window.prompt('Название новой папки:');
+    if (name && name.trim()) {
+      onCreate(name.trim());
+      haptic('medium');
+      onClose();
     }
-    const trimmed = newName.trim();
-    setNewName('');
-    setIsCreating(false);
-    onCreate(trimmed);
-    haptic('medium');
-    onClose(); // закрываем сразу, без таймаута
   };
 
   return (
@@ -52,7 +46,7 @@ export function FolderSheet({ isOpen, folders, activeFolderId, onClose, onSwitch
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            drag={isCreating ? false : 'y'}
+            drag="y"
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={{ top: 0, bottom: 0.5 }}
             onDragEnd={handleDragEnd}
@@ -63,79 +57,49 @@ export function FolderSheet({ isOpen, folders, activeFolderId, onClose, onSwitch
               <div className="w-10 h-1.5 bg-zinc-600 rounded-full" />
             </div>
 
-            {isCreating ? (
-              <div className="px-6 pb-4">
-                <div className="text-white text-lg font-bold mb-3">Название папки</div>
-                <input
-                  autoFocus
-                  type="text"
-                  value={newName}
-                  onChange={e => setNewName(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') handleCreate(); }}
-                  className="w-full bg-zinc-800 text-white text-lg rounded-xl px-4 py-3 outline-none"
-                />
-                <div className="flex gap-2 mt-4">
-                  <button
-                    onClick={() => { setIsCreating(false); setNewName(''); }}
-                    className="flex-1 py-3 rounded-xl bg-zinc-800 text-white font-medium active:opacity-60"
-                  >
-                    Отмена
-                  </button>
-                  <button
-                    onClick={handleCreate}
-                    className="flex-1 py-3 rounded-xl bg-blue-500 text-white font-semibold active:opacity-60"
-                  >
-                    Создать
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="flex justify-between items-center px-6 pb-4">
-                  <h2 className="text-white text-xl font-bold">Мои папки</h2>
-                  <button
-                    onClick={() => setIsCreating(true)}
-                    className="text-blue-500 text-base font-semibold flex items-center gap-1 active:opacity-50"
-                  >
-                    <Plus size={18} /> Новая
-                  </button>
-                </div>
+            <div className="flex justify-between items-center px-6 pb-4">
+              <h2 className="text-white text-xl font-bold">Мои папки</h2>
+              <button
+                onClick={handleCreateClick}
+                className="text-blue-500 text-base font-semibold flex items-center gap-1 active:opacity-50"
+              >
+                <Plus size={18} /> Новая
+              </button>
+            </div>
 
-                <div className="max-h-[50vh] overflow-y-auto">
-                  {folders.map(folder => (
-                    <div
-                      key={folder.id}
-                      className="flex items-center justify-between px-6 py-3 border-b border-zinc-800"
+            <div className="max-h-[50vh] overflow-y-auto">
+              {folders.map(folder => (
+                <div
+                  key={folder.id}
+                  className="flex items-center justify-between px-6 py-3 border-b border-zinc-800"
+                >
+                  <button
+                    onClick={() => {
+                      onSwitch(folder.id);
+                      haptic('light');
+                      onClose();
+                    }}
+                    className="flex-1 text-left text-white text-lg"
+                  >
+                    {folder.name}
+                    {folder.id === activeFolderId && (
+                      <Check size={16} className="inline ml-2 text-green-500" />
+                    )}
+                  </button>
+                  {folders.length > 1 && (
+                    <button
+                      onClick={() => {
+                        onDelete(folder.id);
+                        haptic('heavy');
+                      }}
+                      className="p-2 active:opacity-50"
                     >
-                      <button
-                        onClick={() => {
-                          onSwitch(folder.id);
-                          haptic('light');
-                          onClose();
-                        }}
-                        className="flex-1 text-left text-white text-lg"
-                      >
-                        {folder.name}
-                        {folder.id === activeFolderId && (
-                          <Check size={16} className="inline ml-2 text-green-500" />
-                        )}
-                      </button>
-                      {folders.length > 1 && (
-                        <button
-                          onClick={() => {
-                            onDelete(folder.id);
-                            haptic('heavy');
-                          }}
-                          className="p-2 active:opacity-50"
-                        >
-                          <X size={18} className="text-red-500" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
+                      <X size={18} className="text-red-500" />
+                    </button>
+                  )}
                 </div>
-              </>
-            )}
+              ))}
+            </div>
           </motion.div>
         </>
       )}
