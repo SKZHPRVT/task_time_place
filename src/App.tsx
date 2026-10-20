@@ -29,7 +29,7 @@ export default function App() {
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
-  const lastCommitTimeRef = useRef<number>(0);
+  const textRef = useRef(''); // 🆕 Синхронное зеркало newTaskText
 
   const baseColor = activeFolder.baseColor;
   const bgColor = activeFolder.bgColor;
@@ -64,15 +64,13 @@ export default function App() {
 
   useReminderChecker(activeFolder.tasks, handleReminderTriggered);
 
-  // 🆕 Безопасное создание задачи
+  // 🆕 Берём текст из ref (синхронно), а не из state
   const commitNewTask = () => {
-    const trimmed = newTaskText.trim();
+    const trimmed = textRef.current.trim();
     if (!trimmed) return;
 
-    // Защита от двойного клика по времени (100мс)
-    const now = Date.now();
-    if (now - lastCommitTimeRef.current < 100) return;
-    lastCommitTimeRef.current = now;
+    // Сразу обнуляем ref — второй вызов в том же тике увидит пустоту
+    textRef.current = '';
 
     const newTask: Task = {
       id: `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
@@ -80,7 +78,6 @@ export default function App() {
       done: false,
     };
 
-    // Сначала очищаем поле, потом добавляем
     setNewTaskText('');
     inputRef.current?.blur();
     updateFolderTasks(activeFolder.id, prev => [newTask, ...prev]);
@@ -92,7 +89,7 @@ export default function App() {
   };
 
   const handleEmptyTap = () => {
-    if (newTaskText.trim()) {
+    if (textRef.current.trim()) {
       commitNewTask();
     } else {
       haptic('light');
@@ -101,7 +98,7 @@ export default function App() {
   };
 
   const handleActionClick = (action: () => void) => {
-    if (newTaskText.trim()) {
+    if (textRef.current.trim()) {
       commitNewTask();
       return;
     }
@@ -240,7 +237,10 @@ export default function App() {
             ref={inputRef}
             type="text"
             value={newTaskText}
-            onChange={e => setNewTaskText(e.target.value)}
+            onChange={e => {
+              setNewTaskText(e.target.value);
+              textRef.current = e.target.value; // 🆕 Синхронно обновляем ref
+            }}
             placeholder="+ Новая задача"
             className={`w-full bg-transparent text-xl outline-none ${
               bgIsLight ? 'text-zinc-700 placeholder-zinc-500' : 'text-zinc-400 placeholder-zinc-600'
