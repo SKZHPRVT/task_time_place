@@ -15,10 +15,13 @@ const makeDefaultFolder = (): Folder => ({
   baseColor: '#71717a',
   bgColor: '#000000',
   tasks: [
-    { id: 'tut-1', text: '👉 Свайп вправо — выполнить', done: false },
-    { id: 'tut-2', text: '👈 Свайп влево — удалить', done: false },
-    { id: 'tut-3', text: '👆 Тап по тексту — изменить', done: false },
-    { id: 'tut-4', text: '📁 Тап по шапке — создать папку', done: false },
+    { id: 'tut-1', text: '👉 Свайп вправо — выполнить задачу', done: false },
+    { id: 'tut-2', text: '👉 Свайп вправо (по готовой) — вернуть', done: false },
+    { id: 'tut-3', text: '👈 Свайп влево — удалить задачу', done: false },
+    { id: 'tut-4', text: '👆 Тап по полю внизу — создать задачу', done: false },
+    { id: 'tut-5', text: '📁 Тап по шапке — создать / удалить папку', done: false },
+    { id: 'tut-6', text: '🎨 — цвет задач и фона', done: false },
+    { id: 'tut-7', text: '📲 В меню «...» — добавить на рабочий стол', done: false },
   ],
 });
 
@@ -74,7 +77,7 @@ export function useAppState() {
   const [state, setState] = useState<AppState>(() => loadFromLocal() ?? DEFAULT_STATE);
   const initializedRef = useRef(false);
 
-  // 🆕 Синхронная запись в localStorage и CloudStorage прямо при изменении
+  // Синхронная запись в localStorage + CloudStorage
   const persist = useCallback((newState: AppState) => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
@@ -86,18 +89,17 @@ export function useAppState() {
     }
   }, []);
 
-  // 🆕 Обёртка над setState, которая сразу пишет в хранилища
+  // Обёртка: сразу обновляет updatedAt и сохраняет
   const updateState = useCallback((updater: (prev: AppState) => AppState) => {
     setState(prev => {
       const next = updater(prev);
-      // Обновляем updatedAt и сохраняем синхронно
       const withTimestamp = { ...next, updatedAt: Date.now() };
       persist(withTimestamp);
       return withTimestamp;
     });
   }, [persist]);
 
-  // Синхронизация при старте (однократно)
+  // Синхронизация при старте (один раз)
   useEffect(() => {
     if (initializedRef.current) return;
     initializedRef.current = true;
@@ -122,20 +124,17 @@ export function useAppState() {
         } catch {}
       }
 
-      // Локальные есть, облачных нет → пушим локальные
       if (local && !cloud) {
         persist(local);
         return;
       }
 
-      // Локальных нет, облако есть → применяем облако
       if (!local && cloud) {
         setState(cloud);
         persist(cloud);
         return;
       }
 
-      // Оба есть → свежее побеждает
       if (local && cloud) {
         if (cloud.updatedAt > local.updatedAt) {
           setState(cloud);
