@@ -171,6 +171,21 @@ export default function App() {
       </AnimatePresence>
 
       <div className="flex-1 overflow-y-auto pb-24" style={{ backgroundColor: bgColor }}>
+        {/* Плашка-подсказка про папки (только если это первая папка и она дефолтная) */}
+        {activeFolder.id === 'default' && activeFolder.tasks.some(t => t.id.startsWith('tut-')) && (
+          <div className="px-4 pt-4 pb-2">
+            <div className="bg-white/10 rounded-xl px-4 py-3 flex items-start gap-3">
+              <div className="text-2xl mt-0.5">📁</div>
+              <div>
+                <div className="text-white font-semibold text-sm">Папки для разных дел</div>
+                <div className="text-white/70 text-xs mt-0.5">
+                  Нажми на название «{activeFolder.name}» в шапке, чтобы создать новую папку или переключиться.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {sortedTasks.map((task, idx) => {
           let taskBg: string;
           if (task.done) {
