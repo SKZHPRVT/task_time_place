@@ -80,7 +80,8 @@ export default function App() {
 
     setNewTaskText('');
     inputRef.current?.blur();
-    updateFolderTasks(activeFolder.id, prev => [newTask, ...prev]);
+    // 🆕 В конец списка (под предыдущими)
+    updateFolderTasks(activeFolder.id, prev => [...prev, newTask]);
   };
 
   const addTask = (e: React.FormEvent) => {
