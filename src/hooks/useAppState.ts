@@ -53,68 +53,56 @@ function isValidState(state: any): state is AppState {
   }
 }
 
-function loadFromLocal(): AppState | null {
+// Синхронная загрузка — мгновенно
+function loadFromLocal(): AppState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
+    if (!raw) return DEFAULT_STATE;
     const parsed = JSON.parse(raw);
-    return isValidState(parsed) ? parsed : null;
+    return isValidState(parsed) ? parsed : DEFAULT_STATE;
   } catch {
-    return null;
+    return DEFAULT_STATE;
   }
 }
 
 export function useAppState() {
-  const [state, setState] = useState<AppState>(DEFAULT_STATE);
-  const [ready, setReady] = useState(false);
-  const lastSyncedRef = useRef<string>('');
+  // 🆕 Инициализация сразу из localStorage (синхронно). Никаких миганий.
+  const [state, setState] = useState<AppState>(() => loadFromLocal());
+  const lastSyncedRef = useRef<string>(JSON.stringify(state));
 
+  // Фоновая синхронизация с CloudStorage (не блокирует рендер)
   useEffect(() => {
     let cancelled = false;
-    async function init() {
-      // Сначала localStorage (быстро, синхронно)
-      const local = loadFromLocal();
-      if (local && !cancelled) {
-        setState(local);
-        lastSyncedRef.current = JSON.stringify(local);
-      } else if (!cancelled) {
-        // Если в localStorage ничего нет — ставим дефолт явно
-        setState(DEFAULT_STATE);
-      }
+    async function syncCloud() {
+      if (!isTelegram) return;
+      const cloudRaw = await cloudGetItem(CLOUD_KEY);
+      if (cancelled || !cloudRaw) return;
 
-      // Потом CloudStorage (медленнее)
-      if (isTelegram) {
-        const cloudRaw = await cloudGetItem(CLOUD_KEY);
-        if (!cancelled && cloudRaw) {
-          try {
-            const parsed = JSON.parse(cloudRaw);
-            if (isValidState(parsed)) {
-              const cloudStr = JSON.stringify(parsed);
-              if (cloudStr !== lastSyncedRef.current) {
-                setState(parsed);
-                lastSyncedRef.current = cloudStr;
-                try { localStorage.setItem(STORAGE_KEY, cloudStr); } catch {}
-              }
-            }
-          } catch {}
+      try {
+        const parsed = JSON.parse(cloudRaw);
+        if (isValidState(parsed)) {
+          const cloudStr = JSON.stringify(parsed);
+          // Обновляем только если в облаке данные реально другие (например, новее)
+          if (cloudStr !== lastSyncedRef.current) {
+            setState(parsed);
+            lastSyncedRef.current = cloudStr;
+            try { localStorage.setItem(STORAGE_KEY, cloudStr); } catch {}
+          }
         }
-      }
-
-      // Только теперь разрешаем рендер
-      if (!cancelled) setReady(true);
+      } catch {}
     }
-    init();
+    syncCloud();
     return () => { cancelled = true; };
   }, []);
 
+  // Сохранение при каждом изменении
   useEffect(() => {
-    if (!ready) return;
     const str = JSON.stringify(state);
     if (str === lastSyncedRef.current) return;
     lastSyncedRef.current = str;
     try { localStorage.setItem(STORAGE_KEY, str); } catch {}
     if (isTelegram) cloudSetItem(CLOUD_KEY, str).catch(() => {});
-  }, [state, ready]);
+  }, [state]);
 
   const activeFolder = state.folders.find(f => f.id === state.activeFolderId) || state.folders[0];
 
@@ -179,7 +167,6 @@ export function useAppState() {
   return {
     folders: state.folders,
     activeFolder,
-    ready, // 🆕 Флаг готовности
     updateFolderTasks,
     setFolderColor,
     switchFolder,
