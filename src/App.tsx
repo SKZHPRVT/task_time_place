@@ -14,6 +14,7 @@ export default function App() {
   const {
     folders,
     activeFolder,
+    ready,
     updateFolderTasks,
     setFolderColor,
     switchFolder,
@@ -37,8 +38,8 @@ export default function App() {
   const taskTextColor = textIsLight ? 'text-zinc-900' : 'text-white';
 
   useEffect(() => {
-    setHeaderColor(headerBg);
-  }, [headerBg]);
+    if (ready) setHeaderColor(headerBg);
+  }, [headerBg, ready]);
 
   const toggleTask = (id: string) => {
     updateFolderTasks(activeFolder.id, prev => prev.map(t => (t.id === id ? { ...t, done: !t.done } : t)));
@@ -90,6 +91,11 @@ export default function App() {
   const currentColor = paletteMode === 'base' ? baseColor : bgColor;
   const bgIsLight = isLightColor(bgColor);
   const activeTasksCount = sortedTasks.filter(t => !t.done).length;
+
+  // 🆕 Пока данные грузятся — показываем пустой чёрный экран (не мигаем дефолтом)
+  if (!ready) {
+    return <div className="flex-1 bg-black" />;
+  }
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden" style={{ backgroundColor: bgColor }}>

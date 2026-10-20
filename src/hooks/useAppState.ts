@@ -72,11 +72,17 @@ export function useAppState() {
   useEffect(() => {
     let cancelled = false;
     async function init() {
+      // Сначала localStorage (быстро, синхронно)
       const local = loadFromLocal();
       if (local && !cancelled) {
         setState(local);
         lastSyncedRef.current = JSON.stringify(local);
+      } else if (!cancelled) {
+        // Если в localStorage ничего нет — ставим дефолт явно
+        setState(DEFAULT_STATE);
       }
+
+      // Потом CloudStorage (медленнее)
       if (isTelegram) {
         const cloudRaw = await cloudGetItem(CLOUD_KEY);
         if (!cancelled && cloudRaw) {
@@ -93,6 +99,8 @@ export function useAppState() {
           } catch {}
         }
       }
+
+      // Только теперь разрешаем рендер
       if (!cancelled) setReady(true);
     }
     init();
@@ -152,8 +160,6 @@ export function useAppState() {
   const deleteFolder = useCallback((folderId: string) => {
     setState(prev => {
       const newFolders = prev.folders.filter(f => f.id !== folderId);
-
-      // Если удалили последнюю — создаём дефолтную с туториалом
       if (newFolders.length === 0) {
         const defaultFolder = makeDefaultFolder();
         return {
@@ -162,7 +168,6 @@ export function useAppState() {
           activeFolderId: defaultFolder.id,
         };
       }
-
       return {
         ...prev,
         folders: newFolders,
@@ -174,6 +179,7 @@ export function useAppState() {
   return {
     folders: state.folders,
     activeFolder,
+    ready, // 🆕 Флаг готовности
     updateFolderTasks,
     setFolderColor,
     switchFolder,
