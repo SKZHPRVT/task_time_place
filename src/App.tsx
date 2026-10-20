@@ -101,11 +101,13 @@ export default function App() {
   };
 
   // 🆕 Тап на папку/палитру — если есть текст, создать задачу и НЕ открывать панель
-  const handleActionClick = (action: () => void) => {
+  const handleActionClick = (e: React.MouseEvent, action: () => void) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (newTaskText.trim()) {
       commitNewTask();
       inputRef.current?.blur();
-      return; // блокируем открытие панели
+      return;
     }
     action();
   };
@@ -135,7 +137,7 @@ export default function App() {
       >
         {/* Кнопка открытия папок — сначала фиксируем ввод */}
         <button
-          onClick={() => handleActionClick(() => setShowFolders(true))}
+          onClick={(e) => handleActionClick(e, () => setShowFolders(true))}
           className="min-w-0 flex-1 text-left active:opacity-60 transition-opacity"
         >
           <h1
@@ -147,7 +149,7 @@ export default function App() {
         </button>
 
         <button
-          onClick={() => handleActionClick(() => setShowPalette(!showPalette))}
+          onClick={(e) => handleActionClick(e, () => setShowPalette(!showPalette))}
           className="p-2 rounded-full active:bg-white/20 transition-colors shrink-0 mt-1"
         >
           <Palette size={24} className="text-white/80" />
