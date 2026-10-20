@@ -29,7 +29,7 @@ export default function App() {
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
-  const isCommittingRef = useRef(false);
+  const lastCommitTimeRef = useRef<number>(0);
 
   const baseColor = activeFolder.baseColor;
   const bgColor = activeFolder.bgColor;
@@ -64,24 +64,26 @@ export default function App() {
 
   useReminderChecker(activeFolder.tasks, handleReminderTriggered);
 
-  // 🆕 Защита от дублей
+  // 🆕 Безопасное создание задачи
   const commitNewTask = () => {
-    if (isCommittingRef.current) return;
     const trimmed = newTaskText.trim();
     if (!trimmed) return;
 
-    isCommittingRef.current = true;
+    // Защита от двойного клика по времени (100мс)
+    const now = Date.now();
+    if (now - lastCommitTimeRef.current < 100) return;
+    lastCommitTimeRef.current = now;
+
     const newTask: Task = {
-      id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, // уникальный ID
+      id: `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
       text: trimmed,
       done: false,
     };
-    updateFolderTasks(activeFolder.id, prev => [newTask, ...prev]);
+
+    // Сначала очищаем поле, потом добавляем
     setNewTaskText('');
     inputRef.current?.blur();
-
-    // Снимаем защиту через 300ms
-    setTimeout(() => { isCommittingRef.current = false; }, 300);
+    updateFolderTasks(activeFolder.id, prev => [newTask, ...prev]);
   };
 
   const addTask = (e: React.FormEvent) => {
@@ -89,7 +91,6 @@ export default function App() {
     commitNewTask();
   };
 
-  // 🆕 Тап на пустое место
   const handleEmptyTap = () => {
     if (newTaskText.trim()) {
       commitNewTask();
@@ -99,7 +100,6 @@ export default function App() {
     }
   };
 
-  // 🆕 Тап на папку/палитру
   const handleActionClick = (action: () => void) => {
     if (newTaskText.trim()) {
       commitNewTask();
@@ -195,7 +195,6 @@ export default function App() {
       </AnimatePresence>
 
       <div className="flex-1 overflow-y-auto pb-24" style={{ backgroundColor: bgColor }}>
-        {/* 🆕 AnimatePresence — чтобы задачи анимационно исчезали */}
         <AnimatePresence initial={false}>
           {sortedTasks.map((task, idx) => {
             let taskBg: string;
