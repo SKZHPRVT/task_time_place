@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { Folder } from '../types';
 import { Plus, X, Check } from 'lucide-react';
-import { tg, haptic } from '../lib/telegram';
+import { haptic } from '../lib/telegram';
 
 interface FolderSheetProps {
   isOpen: boolean;
@@ -14,24 +15,23 @@ interface FolderSheetProps {
 }
 
 export function FolderSheet({ isOpen, folders, activeFolderId, onClose, onSwitch, onCreate, onDelete }: FolderSheetProps) {
+  const [isCreating, setIsCreating] = useState(false);
+  const [newName, setNewName] = useState('');
+
   const handleDragEnd = (_e: any, info: PanInfo) => {
     if (info.offset.y > 100) onClose();
   };
 
   const handleCreate = () => {
-    // Используем нативный prompt Telegram (если доступен), иначе alert + prompt
-    if (tg?.showPopup) {
-      tg.showPopup({
-        title: 'Новая папка',
-        message: 'Введите название',
-        buttons: [{ type: 'close' }],
-      }, () => {});
+    if (!newName.trim()) {
+      setIsCreating(false);
+      return;
     }
-    const name = window.prompt('Название папки:');
-    if (name && name.trim()) {
-      onCreate(name.trim());
-      haptic('medium');
-    }
+    onCreate(newName.trim());
+    setNewName('');
+    setIsCreating(false);
+    haptic('medium');
+    onClose();
   };
 
   return (
@@ -51,7 +51,7 @@ export function FolderSheet({ isOpen, folders, activeFolderId, onClose, onSwitch
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            drag="y"
+            drag={isCreating ? false : 'y'}
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={{ top: 0, bottom: 0.5 }}
             onDragEnd={handleDragEnd}
@@ -62,49 +62,80 @@ export function FolderSheet({ isOpen, folders, activeFolderId, onClose, onSwitch
               <div className="w-10 h-1.5 bg-zinc-600 rounded-full" />
             </div>
 
-            <div className="flex justify-between items-center px-6 pb-4">
-              <h2 className="text-white text-xl font-bold">Мои папки</h2>
-              <button
-                onClick={handleCreate}
-                className="text-blue-500 text-base font-semibold flex items-center gap-1 active:opacity-50"
-              >
-                <Plus size={18} /> Новая
-              </button>
-            </div>
-
-            <div className="max-h-[50vh] overflow-y-auto">
-              {folders.map(folder => (
-                <div
-                  key={folder.id}
-                  className="flex items-center justify-between px-6 py-3 border-b border-zinc-800"
-                >
+            {isCreating ? (
+              <div className="px-6 pb-4">
+                <div className="text-white text-lg font-bold mb-3">Название папки</div>
+                <input
+                  autoFocus
+                  type="text"
+                  value={newName}
+                  onChange={e => setNewName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleCreate(); }}
+                  placeholder="Например, Работа"
+                  className="w-full bg-zinc-800 text-white text-lg rounded-xl px-4 py-3 outline-none placeholder-zinc-500"
+                />
+                <div className="flex gap-2 mt-4">
                   <button
-                    onClick={() => {
-                      onSwitch(folder.id);
-                      onClose();
-                      haptic('light');
-                    }}
-                    className="flex-1 text-left text-white text-lg"
+                    onClick={() => { setIsCreating(false); setNewName(''); }}
+                    className="flex-1 py-3 rounded-xl bg-zinc-800 text-white font-medium active:opacity-60"
                   >
-                    {folder.name}
-                    {folder.id === activeFolderId && (
-                      <Check size={16} className="inline ml-2 text-green-500" />
-                    )}
+                    Отмена
                   </button>
-                  {folders.length > 1 && (
-                    <button
-                      onClick={() => {
-                        onDelete(folder.id);
-                        haptic('heavy');
-                      }}
-                      className="p-2 active:opacity-50"
-                    >
-                      <X size={18} className="text-red-500" />
-                    </button>
-                  )}
+                  <button
+                    onClick={handleCreate}
+                    className="flex-1 py-3 rounded-xl bg-blue-500 text-white font-semibold active:opacity-60"
+                  >
+                    Создать
+                  </button>
                 </div>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex justify-between items-center px-6 pb-4">
+                  <h2 className="text-white text-xl font-bold">Мои папки</h2>
+                  <button
+                    onClick={() => setIsCreating(true)}
+                    className="text-blue-500 text-base font-semibold flex items-center gap-1 active:opacity-50"
+                  >
+                    <Plus size={18} /> Новая
+                  </button>
+                </div>
+
+                <div className="max-h-[50vh] overflow-y-auto">
+                  {folders.map(folder => (
+                    <div
+                      key={folder.id}
+                      className="flex items-center justify-between px-6 py-3 border-b border-zinc-800"
+                    >
+                      <button
+                        onClick={() => {
+                          onSwitch(folder.id);
+                          onClose();
+                          haptic('light');
+                        }}
+                        className="flex-1 text-left text-white text-lg"
+                      >
+                        {folder.name}
+                        {folder.id === activeFolderId && (
+                          <Check size={16} className="inline ml-2 text-green-500" />
+                        )}
+                      </button>
+                      {folders.length > 1 && (
+                        <button
+                          onClick={() => {
+                            onDelete(folder.id);
+                            haptic('heavy');
+                          }}
+                          className="p-2 active:opacity-50"
+                        >
+                          <X size={18} className="text-red-500" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </motion.div>
         </>
       )}
