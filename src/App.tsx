@@ -141,7 +141,16 @@ export default function App() {
         >
           <h1
             className="font-bold text-white tracking-tight leading-tight break-all"
-            style={{ fontSize: 'clamp(1.25rem, 5vw, 3rem)' }}
+            style={{
+              fontSize:
+                activeFolder.name.length <= 8
+                  ? '3rem'
+                  : activeFolder.name.length <= 15
+                  ? '2.5rem'
+                  : activeFolder.name.length <= 25
+                  ? '2rem'
+                  : '1.5rem',
+            }}
           >
             {activeFolder.name}
           </h1>
