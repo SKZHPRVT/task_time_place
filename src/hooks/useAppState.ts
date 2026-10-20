@@ -61,7 +61,7 @@ function loadFromLocal(): AppState | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (isValidState(parsed)) {
-      if (typeof parsed.updatedAt !== 'number') parsed.updatedAt = Date.now();
+      if (typeof parsed.updatedAt !== 'number') parsed.updatedAt = 0;
       return parsed;
     }
     return null;
@@ -74,7 +74,30 @@ export function useAppState() {
   const [state, setState] = useState<AppState>(() => loadFromLocal() ?? DEFAULT_STATE);
   const initializedRef = useRef(false);
 
-  // Синхронизация при старте
+  // 🆕 Синхронная запись в localStorage и CloudStorage прямо при изменении
+  const persist = useCallback((newState: AppState) => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
+    } catch (e) {
+      console.warn('[State] Local save failed:', e);
+    }
+    if (isTelegram) {
+      cloudSetItem(CLOUD_KEY, JSON.stringify(newState)).catch(() => {});
+    }
+  }, []);
+
+  // 🆕 Обёртка над setState, которая сразу пишет в хранилища
+  const updateState = useCallback((updater: (prev: AppState) => AppState) => {
+    setState(prev => {
+      const next = updater(prev);
+      // Обновляем updatedAt и сохраняем синхронно
+      const withTimestamp = { ...next, updatedAt: Date.now() };
+      persist(withTimestamp);
+      return withTimestamp;
+    });
+  }, [persist]);
+
+  // Синхронизация при старте (однократно)
   useEffect(() => {
     if (initializedRef.current) return;
     initializedRef.current = true;
@@ -82,12 +105,9 @@ export function useAppState() {
     let cancelled = false;
 
     async function syncCloud() {
+      if (!isTelegram) return;
+
       const local = loadFromLocal();
-
-      if (!isTelegram) {
-        return;
-      }
-
       const cloudRaw = await cloudGetItem(CLOUD_KEY);
       if (cancelled) return;
 
@@ -102,83 +122,57 @@ export function useAppState() {
         } catch {}
       }
 
-      // Сценарии:
-      // 1. Есть локальные данные, нет облачных → пишем локальные в облако
-      // 2. Есть облачные, нет локальных → применяем облачные
-      // 3. Оба есть → побеждает более свежий по updatedAt
-      // 4. Нет ни там, ни там → дефолт (уже стоит)
-
+      // Локальные есть, облачных нет → пушим локальные
       if (local && !cloud) {
-        console.log('[State] Local exists, cloud empty → pushing to cloud');
-        const str = JSON.stringify(local);
-        await cloudSetItem(CLOUD_KEY, str);
+        persist(local);
         return;
       }
 
+      // Локальных нет, облако есть → применяем облако
       if (!local && cloud) {
-        console.log('[State] Local empty, cloud exists → applying cloud');
         setState(cloud);
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cloud)); } catch {}
+        persist(cloud);
         return;
       }
 
+      // Оба есть → свежее побеждает
       if (local && cloud) {
         if (cloud.updatedAt > local.updatedAt) {
-          console.log('[State] Cloud is newer → applying cloud');
           setState(cloud);
-          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cloud)); } catch {}
-        } else {
-          console.log('[State] Local is newer or equal → pushing to cloud');
-          const str = JSON.stringify(local);
-          await cloudSetItem(CLOUD_KEY, str);
+          persist(cloud);
+        } else if (local.updatedAt > cloud.updatedAt) {
+          persist(local);
         }
       }
     }
 
     syncCloud();
     return () => { cancelled = true; };
-  }, []);
-
-  // Сохранение при каждом изменении folders/activeFolderId
-  useEffect(() => {
-    if (!initializedRef.current) return;
-
-    // Обновляем updatedAt
-    const now = Date.now();
-    const newState: AppState = { ...state, updatedAt: now };
-
-    const str = JSON.stringify(newState);
-    try { localStorage.setItem(STORAGE_KEY, str); } catch {}
-    if (isTelegram) cloudSetItem(CLOUD_KEY, str).catch(() => {});
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.folders, state.activeFolderId]);
+  }, [persist]);
 
   const activeFolder = state.folders.find(f => f.id === state.activeFolderId) || state.folders[0];
 
   const updateFolderTasks = useCallback((folderId: string, updater: (tasks: Task[]) => Task[]) => {
-    setState(prev => ({
+    updateState(prev => ({
       ...prev,
-      updatedAt: Date.now(),
       folders: prev.folders.map(f =>
         f.id === folderId ? { ...f, tasks: updater(f.tasks) } : f
       ),
     }));
-  }, []);
+  }, [updateState]);
 
   const setFolderColor = useCallback((folderId: string, key: 'baseColor' | 'bgColor', color: string) => {
-    setState(prev => ({
+    updateState(prev => ({
       ...prev,
-      updatedAt: Date.now(),
       folders: prev.folders.map(f =>
         f.id === folderId ? { ...f, [key]: color } : f
       ),
     }));
-  }, []);
+  }, [updateState]);
 
   const switchFolder = useCallback((folderId: string) => {
-    setState(prev => ({ ...prev, updatedAt: Date.now(), activeFolderId: folderId }));
-  }, []);
+    updateState(prev => ({ ...prev, activeFolderId: folderId }));
+  }, [updateState]);
 
   const createFolder = useCallback((name: string) => {
     const id = Date.now().toString();
@@ -189,35 +183,32 @@ export function useAppState() {
       bgColor: '#000000',
       tasks: [],
     };
-    setState(prev => ({
+    updateState(prev => ({
       ...prev,
-      updatedAt: Date.now(),
       folders: [...prev.folders, newFolder],
       activeFolderId: id,
     }));
     return id;
-  }, []);
+  }, [updateState]);
 
   const deleteFolder = useCallback((folderId: string) => {
-    setState(prev => {
+    updateState(prev => {
       const newFolders = prev.folders.filter(f => f.id !== folderId);
       if (newFolders.length === 0) {
         const defaultFolder = makeDefaultFolder();
         return {
           ...prev,
-          updatedAt: Date.now(),
           folders: [defaultFolder],
           activeFolderId: defaultFolder.id,
         };
       }
       return {
         ...prev,
-        updatedAt: Date.now(),
         folders: newFolders,
         activeFolderId: prev.activeFolderId === folderId ? newFolders[0].id : prev.activeFolderId,
       };
     });
-  }, []);
+  }, [updateState]);
 
   return {
     folders: state.folders,
