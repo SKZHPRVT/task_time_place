@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, useAnimation, PanInfo } from 'framer-motion';
 import { Bell, Check, X } from 'lucide-react';
 import { Task } from '../types';
@@ -12,6 +12,8 @@ interface SwipeableTaskProps {
   onOpenReminder?: (id: string) => void;
   taskBg?: string;
   textColor?: string;
+  isEditingExternal?: boolean;
+  onEditingDone?: () => void;
 }
 
 export function SwipeableTask({
@@ -22,9 +24,24 @@ export function SwipeableTask({
   onOpenReminder,
   taskBg,
   textColor = 'text-white',
+  isEditingExternal,
+  onEditingDone,
 }: SwipeableTaskProps) {
   const [isEditing, setIsEditing] = useState(false);
   const controls = useAnimation();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isEditingExternal) {
+      setIsEditing(true);
+    }
+  }, [isEditingExternal]);
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isEditing]);
 
   const handleDragEnd = async (_event: any, info: PanInfo) => {
     const threshold = 80;
@@ -68,10 +85,12 @@ export function SwipeableTask({
         <div className="flex-1 min-w-0 mr-3">
           {isEditing ? (
             <input
+              ref={inputRef}
               autoFocus
               defaultValue={task.text}
               onBlur={e => {
                 setIsEditing(false);
+                onEditingDone?.();
                 onUpdate(task.id, e.target.value);
               }}
               onKeyDown={e => {

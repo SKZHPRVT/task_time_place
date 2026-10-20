@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { SwipeableTask } from './components/SwipeableTask';
 import { ReminderSheet } from './components/ReminderSheet';
 import { FolderSheet } from './components/FolderSheet';
@@ -8,7 +8,7 @@ import { useReminderChecker } from './hooks/useReminderChecker';
 import { Palette } from 'lucide-react';
 import { COLOR_PALETTE, getHeaderTaskColors, isLightColor, lightenColor, darkenColor } from './utils/color';
 import { motion, AnimatePresence } from 'framer-motion';
-import { setHeaderColor } from './lib/telegram';
+import { setHeaderColor, haptic } from './lib/telegram';
 
 export default function App() {
   const {
@@ -26,7 +26,9 @@ export default function App() {
   const [paletteMode, setPaletteMode] = useState<'base' | 'bg'>('base');
   const [newTaskText, setNewTaskText] = useState('');
   const [editingReminderId, setEditingReminderId] = useState<string | null>(null);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
 
+  const inputRef = useRef<HTMLInputElement>(null);
   const baseColor = activeFolder.baseColor;
   const bgColor = activeFolder.bgColor;
 
@@ -72,6 +74,13 @@ export default function App() {
     };
     updateFolderTasks(activeFolder.id, prev => [newTask, ...prev]);
     setNewTaskText('');
+    setEditingTaskId(null);
+  };
+
+  // 🆕 Обработчик тапа по пустому месту — фокусируем поле "+ Новая задача"
+  const handleEmptyTap = () => {
+    haptic('light');
+    inputRef.current?.focus();
   };
 
   const sortedTasks = useMemo(() => {
@@ -94,7 +103,7 @@ export default function App() {
   return (
     <div className="flex-1 flex flex-col overflow-hidden" style={{ backgroundColor: bgColor }}>
       <div
-        className="pb-4 px-6 transition-colors duration-300 flex justify-between items-start shrink-0 gap-2"
+        className="pb-4 px-6 transition-colors duration-300 flex justify-between items-center shrink-0 gap-2"
         style={{ backgroundColor: headerBg }}
       >
         <button
@@ -160,6 +169,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
+      {/* Скролл-контейнер с задачами */}
       <div className="flex-1 overflow-y-auto pb-24" style={{ backgroundColor: bgColor }}>
         {sortedTasks.map((task, idx) => {
           let taskBg: string;
@@ -185,12 +195,15 @@ export default function App() {
               onOpenReminder={setEditingReminderId}
               taskBg={taskBg}
               textColor={taskTextColor}
+              isEditingExternal={editingTaskId === task.id}
+              onEditingDone={() => setEditingTaskId(null)}
             />
           );
         })}
 
         <form onSubmit={addTask} className="px-6 py-4">
           <input
+            ref={inputRef}
             type="text"
             value={newTaskText}
             onChange={e => setNewTaskText(e.target.value)}
@@ -200,6 +213,14 @@ export default function App() {
             }`}
           />
         </form>
+
+        {/* 🆕 Пустая кликабельная область — тап создаёт задачу */}
+        <div
+          onClick={handleEmptyTap}
+          className="flex-1 min-h-[50vh] cursor-pointer"
+          style={{ touchAction: 'manipulation' }}
+          aria-label="Создать задачу"
+        />
       </div>
 
       <FolderSheet
