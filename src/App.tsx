@@ -29,12 +29,12 @@ export default function App() {
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const isCommittingRef = useRef(false);
+
   const baseColor = activeFolder.baseColor;
   const bgColor = activeFolder.bgColor;
-
   const colors = getHeaderTaskColors(baseColor);
   const headerBg = colors.header;
-
   const textIsLight = isLightColor(baseColor);
   const taskTextColor = textIsLight ? 'text-zinc-900' : 'text-white';
 
@@ -64,9 +64,12 @@ export default function App() {
 
   useReminderChecker(activeFolder.tasks, handleReminderTriggered);
 
-  // 🆕 Функция создания задачи — используется и в форме, и в blur
+  // 🆕 Функция создания задачи с защитой от двойного вызова
   const commitNewTask = () => {
+    if (isCommittingRef.current) return;
     if (!newTaskText.trim()) return;
+    
+    isCommittingRef.current = true;
     const newTask: Task = {
       id: Date.now().toString(),
       text: newTaskText.trim(),
@@ -74,22 +77,23 @@ export default function App() {
     };
     updateFolderTasks(activeFolder.id, prev => [newTask, ...prev]);
     setNewTaskText('');
+    
+    // Снимаем защиту чуть позже, когда состояние обновится
+    setTimeout(() => { isCommittingRef.current = false; }, 100);
   };
 
   const addTask = (e: React.FormEvent) => {
     e.preventDefault();
     commitNewTask();
-    inputRef.current?.blur(); // снимаем фокус после Enter
+    inputRef.current?.blur();
   };
 
-  // 🆕 При потере фокуса — если есть текст, создаём задачу
+  // 🆕 Убираем создание задачи на blur, чтобы избежать дублей
   const handleBlur = () => {
-    if (newTaskText.trim()) {
-      commitNewTask();
-    }
+    // Ничего не делаем — задача создастся только по Enter, тапу на папку или пустое место
   };
 
-  // 🆕 Тап на пустое место — если есть текст, создать задачу; если нет — фокус на поле
+  // 🆕 Тап на пустое место
   const handleEmptyTap = () => {
     if (newTaskText.trim()) {
       commitNewTask();
@@ -101,13 +105,11 @@ export default function App() {
   };
 
   // 🆕 Тап на папку/палитру — если есть текст, создать задачу и НЕ открывать панель
-  const handleActionClick = (e: React.MouseEvent, action: () => void) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleActionClick = (action: () => void) => {
     if (newTaskText.trim()) {
       commitNewTask();
       inputRef.current?.blur();
-      return;
+      return; // блокируем открытие
     }
     action();
   };
@@ -135,9 +137,8 @@ export default function App() {
         className="pb-4 px-6 transition-colors duration-300 flex justify-between items-center shrink-0 gap-2"
         style={{ backgroundColor: headerBg }}
       >
-        {/* Кнопка открытия папок — сначала фиксируем ввод */}
         <button
-          onClick={(e) => handleActionClick(e, () => setShowFolders(true))}
+          onClick={() => handleActionClick(() => setShowFolders(true))}
           className="min-w-0 flex-1 text-left active:opacity-60 transition-opacity"
         >
           <h1
@@ -149,7 +150,7 @@ export default function App() {
         </button>
 
         <button
-          onClick={(e) => handleActionClick(e, () => setShowPalette(!showPalette))}
+          onClick={() => handleActionClick(() => setShowPalette(!showPalette))}
           className="p-2 rounded-full active:bg-white/20 transition-colors shrink-0 mt-1"
         >
           <Palette size={24} className="text-white/80" />
@@ -236,7 +237,6 @@ export default function App() {
             type="text"
             value={newTaskText}
             onChange={e => setNewTaskText(e.target.value)}
-            onBlur={handleBlur}
             placeholder="+ Новая задача"
             className={`w-full bg-transparent text-xl outline-none ${
               bgIsLight ? 'text-zinc-700 placeholder-zinc-500' : 'text-zinc-400 placeholder-zinc-600'
@@ -245,7 +245,6 @@ export default function App() {
           />
         </form>
 
-        {/* Пустая область — фиксирует ввод или фокусирует поле */}
         <div
           onClick={handleEmptyTap}
           className="min-h-[50vh] cursor-pointer"
