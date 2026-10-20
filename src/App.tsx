@@ -97,22 +97,34 @@ export default function App() {
         className="pb-4 px-6 transition-colors duration-300 flex justify-between items-center shrink-0"
         style={{ backgroundColor: headerBg }}
       >
-        {/* 🆕 Тап по названию открывает шторку папок */}
-        <button
-          onClick={() => setShowFolders(true)}
-          className="flex items-center gap-2 active:opacity-60 transition-opacity"
-        >
-          <h1 className="text-5xl font-bold text-white tracking-tight truncate max-w-[80%]">
-            {activeFolder.name}
-          </h1>
-          <ChevronDown size={24} className="text-white/60 shrink-0" />
-        </button>
-        <button
-          onClick={() => setShowPalette(!showPalette)}
-          className="p-2 rounded-full active:bg-white/20 transition-colors"
-        >
-          <Palette size={24} className="text-white/80" />
-        </button>
+        {/* Левая часть: название + стрелка */}
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <button
+            onClick={() => setShowFolders(true)}
+            className="flex items-center gap-2 active:opacity-60 transition-opacity min-w-0"
+          >
+            <h1 className="text-4xl font-bold text-white tracking-tight truncate">
+              {activeFolder.name}
+            </h1>
+          </button>
+        </div>
+        
+        {/* Правая часть: стрелка (ближе к палитре) + палитра */}
+        <div className="flex items-center gap-1 shrink-0 ml-2">
+          <button
+            onClick={() => setShowFolders(true)}
+            className="p-2 active:opacity-60 transition-opacity"
+            aria-label="Выбрать папку"
+          >
+            <ChevronDown size={24} className="text-white/60" />
+          </button>
+          <button
+            onClick={() => setShowPalette(!showPalette)}
+            className="p-2 rounded-full active:bg-white/20 transition-colors"
+          >
+            <Palette size={24} className="text-white/80" />
+          </button>
+        </div>
       </div>
 
       <AnimatePresence>
@@ -200,7 +212,6 @@ export default function App() {
         </form>
       </div>
 
-      {/* Папки */}
       <FolderSheet
         isOpen={showFolders}
         folders={folders}
@@ -211,7 +222,6 @@ export default function App() {
         onDelete={deleteFolder}
       />
 
-      {/* Напоминание */}
       <ReminderSheet
         isOpen={editingReminderId !== null}
         currentReminder={editingTask?.reminder}
