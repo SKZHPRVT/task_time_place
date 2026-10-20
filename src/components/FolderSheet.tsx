@@ -76,7 +76,7 @@ export function FolderSheet({ isOpen, folders, activeFolderId, onClose, onSwitch
                 return (
                   <div
                     key={folder.id}
-                    className="flex items-center justify-between px-6 py-3 border-b border-zinc-800"
+                    className="flex items-center justify-between gap-2 px-4 py-3 border-b border-zinc-800"
                     style={{ backgroundColor: headerBg }}
                   >
                     <button
@@ -85,19 +85,20 @@ export function FolderSheet({ isOpen, folders, activeFolderId, onClose, onSwitch
                         haptic('light');
                         onClose();
                       }}
-                      className={`flex-1 text-left text-lg font-medium ${textColor}`}
+                      className={`flex-1 min-w-0 text-left text-lg font-medium break-all ${textColor}`}
                     >
                       {folder.name}
                       {folder.id === activeFolderId && (
-                        <Check size={16} className={`inline ml-2 ${light ? 'text-green-700' : 'text-green-400'}`} />
+                        <Check size={16} className={`inline ml-1 shrink-0 ${light ? 'text-green-700' : 'text-green-400'}`} />
                       )}
                     </button>
                     <button
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         onDelete(folder.id);
                         haptic('heavy');
                       }}
-                      className="p-2 active:opacity-50"
+                      className="p-2 shrink-0 active:opacity-50"
                     >
                       <X size={18} className={light ? 'text-red-700' : 'text-red-400'} />
                     </button>
