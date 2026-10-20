@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Reorder } from 'framer-motion';
 import { SwipeableTask } from './components/SwipeableTask';
 import { ReminderSheet } from './components/ReminderSheet';
 import { FolderSheet } from './components/FolderSheet';
@@ -27,6 +26,7 @@ export default function App() {
   const [paletteMode, setPaletteMode] = useState<'base' | 'bg'>('base');
   const [newTaskText, setNewTaskText] = useState('');
   const [editingReminderId, setEditingReminderId] = useState<string | null>(null);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const textRef = useRef('');
@@ -42,13 +42,13 @@ export default function App() {
     setHeaderColor(headerBg);
   }, [headerBg]);
 
-  // 🆕 Возврат в начало + выполненные вниз
   const toggleTask = (id: string) => {
     updateFolderTasks(activeFolder.id, prev => {
       const target = prev.find(t => t.id === id);
       if (!target) return prev;
       const updated = { ...target, done: !target.done };
       const others = prev.filter(t => t.id !== id);
+      // Возврат в начало активных, если снова активна
       return updated.done ? [...others, updated] : [updated, ...others];
     });
   };
@@ -82,6 +82,7 @@ export default function App() {
     };
     setNewTaskText('');
     inputRef.current?.blur();
+    // В конец списка (под предыдущими)
     updateFolderTasks(activeFolder.id, prev => [...prev, newTask]);
   };
 
@@ -107,18 +108,12 @@ export default function App() {
     action();
   };
 
-  // 🆕 Сортировка: активные сверху (в порядке как в массиве), выполненные — внизу
   const sortedTasks = useMemo(() => {
-    const active = activeFolder.tasks.filter(t => !t.done);
-    const done = activeFolder.tasks.filter(t => t.done);
-    return [...active, ...done];
+    return [...activeFolder.tasks].sort((a, b) => {
+      if (a.done === b.done) return 0;
+      return a.done ? 1 : -1;
+    });
   }, [activeFolder.tasks]);
-
-  // 🆕 Обработчик reorder — применяем только к активным (done отфильтрованы)
-  const handleReorder = (newActiveOrder: Task[]) => {
-    const doneTasks = activeFolder.tasks.filter(t => t.done);
-    updateFolderTasks(activeFolder.id, () => [...newActiveOrder, ...doneTasks]);
-  };
 
   const editingTask = editingReminderId ? activeFolder.tasks.find(t => t.id === editingReminderId) : null;
   const handlePaletteSelect = (hex: string) => {
@@ -127,10 +122,7 @@ export default function App() {
 
   const currentColor = paletteMode === 'base' ? baseColor : bgColor;
   const bgIsLight = isLightColor(bgColor);
-
-  const activeTasks = sortedTasks.filter(t => !t.done);
-  const doneTasks = sortedTasks.filter(t => t.done);
-  const activeTasksCount = activeTasks.length;
+  const activeTasksCount = sortedTasks.filter(t => !t.done).length;
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden" style={{ backgroundColor: bgColor }}>
@@ -213,50 +205,45 @@ export default function App() {
       </AnimatePresence>
 
       <div className="flex-1 overflow-y-auto pb-24" style={{ backgroundColor: bgColor }}>
-        {/* 🆕 Активные задачи — Reorder.Group для перетаскивания */}
-        <Reorder.Group
-          axis="y"
-          values={activeTasks}
-          onReorder={handleReorder}
-          className="list-none p-0 m-0"
-        >
-          {activeTasks.map((task, idx) => {
-            const lightenPercent = activeTasksCount > 1
-              ? -5 + (idx / Math.max(1, activeTasksCount - 1)) * 30
-              : -5;
-            const taskBg = lightenPercent >= 0
-              ? lightenColor(baseColor, lightenPercent)
-              : darkenColor(baseColor, Math.abs(lightenPercent));
+        <AnimatePresence initial={false}>
+          {sortedTasks.map((task, idx) => {
+            let taskBg: string;
+            if (task.done) {
+              taskBg = headerBg;
+            } else {
+              const activeIdx = sortedTasks.slice(0, idx).filter(t => !t.done).length;
+              const lightenPercent = activeTasksCount > 1
+                ? -5 + (activeIdx / Math.max(1, activeTasksCount - 1)) * 30
+                : -5;
+              taskBg = lightenPercent >= 0
+                ? lightenColor(baseColor, lightenPercent)
+                : darkenColor(baseColor, Math.abs(lightenPercent));
+            }
 
             return (
-              <SwipeableTask
+              <motion.div
                 key={task.id}
-                task={task}
-                onToggle={toggleTask}
-                onDelete={deleteTask}
-                onUpdate={updateTask}
-                onOpenReminder={setEditingReminderId}
-                taskBg={taskBg}
-                textColor={taskTextColor}
-                isDraggable={true}
-              />
+                layout
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <SwipeableTask
+                  task={task}
+                  onToggle={toggleTask}
+                  onDelete={deleteTask}
+                  onUpdate={updateTask}
+                  onOpenReminder={setEditingReminderId}
+                  taskBg={taskBg}
+                  textColor={taskTextColor}
+                  isEditingExternal={editingTaskId === task.id}
+                  onEditingDone={() => setEditingTaskId(null)}
+                />
+              </motion.div>
             );
           })}
-        </Reorder.Group>
-
-        {/* 🆕 Выполненные — просто список без reorder, внизу */}
-        {doneTasks.map(task => (
-          <SwipeableTask
-            key={task.id}
-            task={task}
-            onToggle={toggleTask}
-            onDelete={deleteTask}
-            onUpdate={updateTask}
-            onOpenReminder={setEditingReminderId}
-            taskBg={headerBg}
-            textColor={taskTextColor}
-          />
-        ))}
+        </AnimatePresence>
 
         <form onSubmit={addTask} className="px-6 py-4">
           <input
@@ -304,7 +291,6 @@ export default function App() {
         onRemove={() => editingReminderId && setReminder(editingReminderId, undefined)}
       />
 
-      {/* Оверлей при вводе */}
       {newTaskText.trim().length > 0 && (
         <div
           onClick={() => {

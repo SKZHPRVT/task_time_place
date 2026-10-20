@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion, useAnimation, PanInfo, Reorder } from 'framer-motion';
-import { Bell, Check, X, GripVertical } from 'lucide-react';
+import { motion, useAnimation, PanInfo } from 'framer-motion';
+import { Bell, Check, X } from 'lucide-react';
 import { Task } from '../types';
 import { haptic } from '../lib/telegram';
 
@@ -12,7 +12,8 @@ interface SwipeableTaskProps {
   onOpenReminder?: (id: string) => void;
   taskBg?: string;
   textColor?: string;
-  isDraggable?: boolean;
+  isEditingExternal?: boolean;
+  onEditingDone?: () => void;
 }
 
 export function SwipeableTask({
@@ -23,11 +24,18 @@ export function SwipeableTask({
   onOpenReminder,
   taskBg,
   textColor = 'text-white',
-  isDraggable = false,
+  isEditingExternal,
+  onEditingDone,
 }: SwipeableTaskProps) {
   const [isEditing, setIsEditing] = useState(false);
   const controls = useAnimation();
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isEditingExternal) {
+      setIsEditing(true);
+    }
+  }, [isEditingExternal]);
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -53,9 +61,8 @@ export function SwipeableTask({
   const bgColor = taskBg || '#a1a1aa';
   const hasReminder = Boolean(task.reminder);
 
-  const content = (
-    <>
-      {/* Фоны при свайпе */}
+  return (
+    <div className="relative overflow-hidden w-full" style={{ backgroundColor: '#000' }}>
       <div className="absolute inset-0 flex justify-between items-center">
         <div className="pl-2 h-full flex items-center">
           <Check size={28} className="text-green-500" strokeWidth={3} />
@@ -71,7 +78,8 @@ export function SwipeableTask({
         dragElastic={0.2}
         onDragEnd={handleDragEnd}
         animate={controls}
-        className="relative flex items-start w-full z-10"
+        style={{ backgroundColor: bgColor }}
+        className="relative flex items-start px-3 py-4 border-b border-black/10 w-full"
       >
         <div className="flex-1 min-w-0 mr-3">
           {isEditing ? (
@@ -81,6 +89,7 @@ export function SwipeableTask({
               defaultValue={task.text}
               onBlur={e => {
                 setIsEditing(false);
+                onEditingDone?.();
                 onUpdate(task.id, e.target.value);
               }}
               onKeyDown={e => {
@@ -125,27 +134,6 @@ export function SwipeableTask({
           />
         </button>
       </motion.div>
-    </>
-  );
-
-  if (isDraggable) {
-    return (
-      <Reorder.Item
-        value={task}
-        style={{ backgroundColor: bgColor }}
-        className="relative flex items-start px-3 py-4 border-b border-black/10 w-full overflow-hidden cursor-grab active:cursor-grabbing"
-      >
-        {content}
-      </Reorder.Item>
-    );
-  }
-
-  return (
-    <div
-      style={{ backgroundColor: bgColor }}
-      className="relative flex items-start px-3 py-4 border-b border-black/10 w-full overflow-hidden"
-    >
-      {content}
     </div>
   );
 }
