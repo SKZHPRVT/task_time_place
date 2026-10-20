@@ -3,7 +3,6 @@ import { motion, useAnimation, PanInfo } from 'framer-motion';
 import { Bell, Check, X } from 'lucide-react';
 import { Task } from '../types';
 import { haptic } from '../lib/telegram';
-import { isLightColor } from '../utils/color';
 
 interface SwipeableTaskProps {
   task: Task;
@@ -12,9 +11,18 @@ interface SwipeableTaskProps {
   onUpdate: (id: string, text: string) => void;
   onOpenReminder?: (id: string) => void;
   taskBg?: string;
+  textColor?: string;
 }
 
-export function SwipeableTask({ task, onToggle, onDelete, onUpdate, onOpenReminder, taskBg }: SwipeableTaskProps) {
+export function SwipeableTask({
+  task,
+  onToggle,
+  onDelete,
+  onUpdate,
+  onOpenReminder,
+  taskBg,
+  textColor = 'text-white',
+}: SwipeableTaskProps) {
   const [isEditing, setIsEditing] = useState(false);
   const controls = useAnimation();
 
@@ -34,13 +42,8 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate, onOpenRemind
     }
   };
 
-  const bgColor = taskBg || (task.done ? '#3f3f46' : '#a1a1aa');
+  const bgColor = taskBg || '#a1a1aa';
   const hasReminder = Boolean(task.reminder);
-  const light = isLightColor(bgColor);
-  const textColor = light ? 'text-zinc-900' : 'text-white';
-  const iconColor = light ? 'text-zinc-700' : 'text-white/40';
-  const iconActiveColor = light ? 'text-zinc-900' : 'text-white';
-  const timeColor = light ? 'text-zinc-600' : 'text-white/70';
 
   return (
     <div className="relative overflow-hidden w-full" style={{ backgroundColor: '#000' }}>
@@ -90,7 +93,9 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate, onOpenRemind
           )}
 
           {task.reminder && !task.done && (
-            <div className={`text-xs mt-1 ${timeColor}`}>{formatReminder(task.reminder)}</div>
+            <div className={`text-xs mt-1 ${textColor} opacity-70`}>
+              {formatReminder(task.reminder)}
+            </div>
           )}
         </div>
 
@@ -106,7 +111,7 @@ export function SwipeableTask({ task, onToggle, onDelete, onUpdate, onOpenRemind
         >
           <Bell
             size={20}
-            className={hasReminder && !task.done ? iconActiveColor : iconColor}
+            className={`${textColor} ${hasReminder && !task.done ? 'opacity-100' : 'opacity-40'}`}
             fill={hasReminder && !task.done ? 'currentColor' : 'none'}
           />
         </button>
