@@ -238,6 +238,7 @@ export default function App() {
                 onOpenReminder={setEditingReminderId}
                 taskBg={taskBg}
                 textColor={taskTextColor}
+                isDraggable={true}
               />
             );
           })}

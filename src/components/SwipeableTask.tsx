@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion, useAnimation, useDragControls, PanInfo, Reorder } from 'framer-motion';
-import { Bell, Check, X } from 'lucide-react';
+import { motion, useAnimation, PanInfo, Reorder } from 'framer-motion';
+import { Bell, Check, X, GripVertical } from 'lucide-react';
 import { Task } from '../types';
 import { haptic } from '../lib/telegram';
 
@@ -12,6 +12,7 @@ interface SwipeableTaskProps {
   onOpenReminder?: (id: string) => void;
   taskBg?: string;
   textColor?: string;
+  isDraggable?: boolean;
 }
 
 export function SwipeableTask({
@@ -22,12 +23,11 @@ export function SwipeableTask({
   onOpenReminder,
   taskBg,
   textColor = 'text-white',
+  isDraggable = false,
 }: SwipeableTaskProps) {
   const [isEditing, setIsEditing] = useState(false);
   const controls = useAnimation();
-  const dragControls = useDragControls();
   const inputRef = useRef<HTMLInputElement>(null);
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -50,37 +50,11 @@ export function SwipeableTask({
     }
   };
 
-  // 🆕 Long press → запуск drag для reorder
-  const handlePointerDown = (e: React.PointerEvent) => {
-    if (isEditing) return;
-    // Не активируем long press при тапе на кнопку напоминания
-    const target = e.target as HTMLElement;
-    if (target.closest('button')) return;
-
-    longPressTimer.current = setTimeout(() => {
-      haptic('medium');
-      dragControls.start(e);
-    }, 300);
-  };
-
-  const handlePointerUp = () => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-  };
-
   const bgColor = taskBg || '#a1a1aa';
   const hasReminder = Boolean(task.reminder);
 
-  return (
-    <Reorder.Item
-      value={task}
-      dragListener={false}
-      dragControls={dragControls}
-      style={{ backgroundColor: bgColor }}
-      className="relative flex items-start px-3 py-4 border-b border-black/10 w-full overflow-hidden"
-    >
+  const content = (
+    <>
       {/* Фоны при свайпе */}
       <div className="absolute inset-0 flex justify-between items-center">
         <div className="pl-2 h-full flex items-center">
@@ -97,9 +71,6 @@ export function SwipeableTask({
         dragElastic={0.2}
         onDragEnd={handleDragEnd}
         animate={controls}
-        onPointerDown={handlePointerDown}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
         className="relative flex items-start w-full z-10"
       >
         <div className="flex-1 min-w-0 mr-3">
@@ -154,7 +125,28 @@ export function SwipeableTask({
           />
         </button>
       </motion.div>
-    </Reorder.Item>
+    </>
+  );
+
+  if (isDraggable) {
+    return (
+      <Reorder.Item
+        value={task}
+        style={{ backgroundColor: bgColor }}
+        className="relative flex items-start px-3 py-4 border-b border-black/10 w-full overflow-hidden cursor-grab active:cursor-grabbing"
+      >
+        {content}
+      </Reorder.Item>
+    );
+  }
+
+  return (
+    <div
+      style={{ backgroundColor: bgColor }}
+      className="relative flex items-start px-3 py-4 border-b border-black/10 w-full overflow-hidden"
+    >
+      {content}
+    </div>
   );
 }
 
