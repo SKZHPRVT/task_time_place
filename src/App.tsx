@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { SwipeableTask } from './components/SwipeableTask';
 import { ReminderSheet } from './components/ReminderSheet';
 import { FolderSheet } from './components/FolderSheet';
-import { Task, Folder } from './types';
+import { Task } from './types';
 import { useAppState } from './hooks/useAppState';
 import { useReminderChecker } from './hooks/useReminderChecker';
 import { Palette } from 'lucide-react';
@@ -97,27 +97,21 @@ export default function App() {
         className="pb-4 px-6 transition-colors duration-300 flex justify-between items-center shrink-0"
         style={{ backgroundColor: headerBg }}
       >
-        {/* Левая часть: название + стрелка */}
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          <button
-            onClick={() => setShowFolders(true)}
-            className="flex items-center gap-2 active:opacity-60 transition-opacity min-w-0"
-          >
-            <h1 className="text-4xl font-bold text-white tracking-tight truncate">
-              {activeFolder.name}
-            </h1>
-          </button>
-        </div>
-        
-        {/* Правая часть: стрелка (ближе к палитре) + палитра */}
-        <div className="flex items-center gap-1 shrink-0 ml-2">
-          <button
-            onClick={() => setShowPalette(!showPalette)}
-            className="p-2 rounded-full active:bg-white/20 transition-colors"
-          >
-            <Palette size={24} className="text-white/80" />
-          </button>
-        </div>
+        <button
+          onClick={() => setShowFolders(true)}
+          className="min-w-0 flex-1 text-left active:opacity-60 transition-opacity"
+        >
+          <h1 className="text-5xl font-bold text-white tracking-tight truncate">
+            {activeFolder.name}
+          </h1>
+        </button>
+
+        <button
+          onClick={() => setShowPalette(!showPalette)}
+          className="p-2 rounded-full active:bg-white/20 transition-colors shrink-0 ml-2"
+        >
+          <Palette size={24} className="text-white/80" />
+        </button>
       </div>
 
       <AnimatePresence>
@@ -164,21 +158,6 @@ export default function App() {
       </AnimatePresence>
 
       <div className="flex-1 overflow-y-auto pb-24" style={{ backgroundColor: bgColor }}>
-        {/* Плашка-подсказка про папки (только если это первая папка и она дефолтная) */}
-        {activeFolder.id === 'default' && activeFolder.tasks.some(t => t.id.startsWith('tut-')) && (
-          <div className="px-4 pt-4 pb-2">
-            <div className="bg-white/10 rounded-xl px-4 py-3 flex items-start gap-3">
-              <div className="text-2xl mt-0.5">📁</div>
-              <div>
-                <div className="text-white font-semibold text-sm">Папки для разных дел</div>
-                <div className="text-white/70 text-xs mt-0.5">
-                  Нажми на название «{activeFolder.name}» в шапке, чтобы создать новую папку или переключиться.
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {sortedTasks.map((task, idx) => {
           let taskBg: string;
           if (task.done) {

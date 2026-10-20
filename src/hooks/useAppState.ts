@@ -17,7 +17,8 @@ const DEFAULT_FOLDER: Folder = {
     { id: 'tut-1', text: '👉 Свайпни вправо, чтобы выполнить', done: false },
     { id: 'tut-2', text: '👈 Свайпни влево, чтобы удалить', done: false },
     { id: 'tut-3', text: '👆 Нажми на текст, чтобы изменить', done: false },
-    { id: 'tut-4', text: 'Это выполнено (свайп вправо)', done: true },
+    { id: 'tut-4', text: '📁 Тап по названию в шапке — создать папку', done: false },
+    { id: 'tut-5', text: 'Это выполнено (свайп вправо)', done: true },
   ],
 };
 
@@ -108,7 +109,6 @@ export function useAppState() {
     if (isTelegram) cloudSetItem(CLOUD_KEY, str).catch(() => {});
   }, [state, ready]);
 
-  // Получить текущую папку
   const activeFolder = state.folders.find(f => f.id === state.activeFolderId) || state.folders[0];
 
   const updateFolderTasks = useCallback((folderId: string, updater: (tasks: Task[]) => Task[]) => {
