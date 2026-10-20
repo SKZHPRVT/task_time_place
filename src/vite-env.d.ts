@@ -8,9 +8,7 @@ interface TelegramCloudStorage {
 
 interface TelegramWebApp {
   initData: string;
-  initDataUnsafe: {
-    user?: { id: number; first_name?: string; username?: string };
-  };
+  initDataUnsafe: { user?: { id: number; first_name?: string; username?: string } };
   version: string;
   platform: string;
   colorScheme: 'light' | 'dark';
@@ -23,6 +21,7 @@ interface TelegramWebApp {
   close: () => void;
   showAlert: (message: string, callback?: () => void) => void;
   showConfirm: (message: string, callback?: (confirmed: boolean) => void) => void;
+  showPopup?: (params: any, callback?: (buttonId: string) => void) => void;
   setHeaderColor: (color: string) => void;
   setBackgroundColor: (color: string) => void;
   setBottomBarColor?: (color: string) => void;

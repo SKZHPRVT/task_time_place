@@ -2,13 +2,13 @@ export type Task = {
   id: string;
   text: string;
   done: boolean;
-  reminder?: string; // ISO строка с датой и временем
-  color?: string;    // Цвет фона задачи
+  reminder?: string;
 };
 
-export type List = {
+export type Folder = {
   id: string;
-  title: string;
-  color: string;
-  count: number;
+  name: string;
+  baseColor: string;
+  bgColor: string;
+  tasks: Task[];
 };

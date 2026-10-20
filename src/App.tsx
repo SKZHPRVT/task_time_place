@@ -1,25 +1,38 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { SwipeableTask } from './components/SwipeableTask';
 import { ReminderSheet } from './components/ReminderSheet';
-import { Task } from './types';
+import { FolderSheet } from './components/FolderSheet';
+import { Task, Folder } from './types';
 import { useAppState } from './hooks/useAppState';
 import { useReminderChecker } from './hooks/useReminderChecker';
-import { Palette } from 'lucide-react';
+import { Palette, ChevronDown } from 'lucide-react';
 import { COLOR_PALETTE, getHeaderTaskColors, isLightColor, lightenColor, darkenColor } from './utils/color';
 import { motion, AnimatePresence } from 'framer-motion';
 import { setHeaderColor } from './lib/telegram';
 
 export default function App() {
-  const { tasks, baseColor, bgColor, updateTasks, setBaseColor, setBgColor } = useAppState();
+  const {
+    folders,
+    activeFolder,
+    updateFolderTasks,
+    setFolderColor,
+    switchFolder,
+    createFolder,
+    deleteFolder,
+  } = useAppState();
+
   const [showPalette, setShowPalette] = useState(false);
+  const [showFolders, setShowFolders] = useState(false);
   const [paletteMode, setPaletteMode] = useState<'base' | 'bg'>('base');
   const [newTaskText, setNewTaskText] = useState('');
   const [editingReminderId, setEditingReminderId] = useState<string | null>(null);
 
+  const baseColor = activeFolder.baseColor;
+  const bgColor = activeFolder.bgColor;
+
   const colors = getHeaderTaskColors(baseColor);
   const headerBg = colors.header;
 
-  // 🆕 Один цвет текста для всех задач, на основе baseColor
   const textIsLight = isLightColor(baseColor);
   const taskTextColor = textIsLight ? 'text-zinc-900' : 'text-white';
 
@@ -28,26 +41,26 @@ export default function App() {
   }, [headerBg]);
 
   const toggleTask = (id: string) => {
-    updateTasks(prev => prev.map(t => (t.id === id ? { ...t, done: !t.done } : t)));
+    updateFolderTasks(activeFolder.id, prev => prev.map(t => (t.id === id ? { ...t, done: !t.done } : t)));
   };
 
   const deleteTask = (id: string) => {
-    updateTasks(prev => prev.filter(t => t.id !== id));
+    updateFolderTasks(activeFolder.id, prev => prev.filter(t => t.id !== id));
   };
 
   const updateTask = (id: string, text: string) => {
-    updateTasks(prev => prev.map(t => (t.id === id ? { ...t, text } : t)));
+    updateFolderTasks(activeFolder.id, prev => prev.map(t => (t.id === id ? { ...t, text } : t)));
   };
 
   const setReminder = (id: string, reminder: string | undefined) => {
-    updateTasks(prev => prev.map(t => (t.id === id ? { ...t, reminder } : t)));
+    updateFolderTasks(activeFolder.id, prev => prev.map(t => (t.id === id ? { ...t, reminder } : t)));
   };
 
   const handleReminderTriggered = useCallback((id: string) => {
-    updateTasks(prev => prev.map(t => (t.id === id ? { ...t, reminder: undefined } : t)));
-  }, [updateTasks]);
+    updateFolderTasks(activeFolder.id, prev => prev.map(t => (t.id === id ? { ...t, reminder: undefined } : t)));
+  }, [activeFolder.id, updateFolderTasks]);
 
-  useReminderChecker(tasks, handleReminderTriggered);
+  useReminderChecker(activeFolder.tasks, handleReminderTriggered);
 
   const addTask = (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,22 +70,21 @@ export default function App() {
       text: newTaskText.trim(),
       done: false,
     };
-    updateTasks(prev => [newTask, ...prev]);
+    updateFolderTasks(activeFolder.id, prev => [newTask, ...prev]);
     setNewTaskText('');
   };
 
   const sortedTasks = useMemo(() => {
-    return [...tasks].sort((a, b) => {
+    return [...activeFolder.tasks].sort((a, b) => {
       if (a.done === b.done) return 0;
       return a.done ? 1 : -1;
     });
-  }, [tasks]);
+  }, [activeFolder.tasks]);
 
-  const editingTask = editingReminderId ? tasks.find(t => t.id === editingReminderId) : null;
+  const editingTask = editingReminderId ? activeFolder.tasks.find(t => t.id === editingReminderId) : null;
 
   const handlePaletteSelect = (hex: string) => {
-    if (paletteMode === 'base') setBaseColor(hex);
-    else setBgColor(hex);
+    setFolderColor(activeFolder.id, paletteMode === 'base' ? 'baseColor' : 'bgColor', hex);
   };
 
   const currentColor = paletteMode === 'base' ? baseColor : bgColor;
@@ -82,13 +94,22 @@ export default function App() {
   return (
     <div className="flex-1 flex flex-col overflow-hidden" style={{ backgroundColor: bgColor }}>
       <div
-        className="pb-4 px-6 transition-colors duration-300 flex justify-between items-end shrink-0"
+        className="pb-4 px-6 transition-colors duration-300 flex justify-between items-center shrink-0"
         style={{ backgroundColor: headerBg }}
       >
-        <h1 className="text-5xl font-bold text-white tracking-tight">Задачи</h1>
+        {/* 🆕 Тап по названию открывает шторку папок */}
+        <button
+          onClick={() => setShowFolders(true)}
+          className="flex items-center gap-2 active:opacity-60 transition-opacity"
+        >
+          <h1 className="text-5xl font-bold text-white tracking-tight truncate max-w-[80%]">
+            {activeFolder.name}
+          </h1>
+          <ChevronDown size={24} className="text-white/60 shrink-0" />
+        </button>
         <button
           onClick={() => setShowPalette(!showPalette)}
-          className="mb-1 p-2 rounded-full active:bg-white/20 transition-colors"
+          className="p-2 rounded-full active:bg-white/20 transition-colors"
         >
           <Palette size={24} className="text-white/80" />
         </button>
@@ -120,7 +141,6 @@ export default function App() {
                 Фон
               </button>
             </div>
-
             <div className="flex gap-3 px-6 py-4 overflow-x-auto">
               {COLOR_PALETTE.map((c) => (
                 <button
@@ -145,7 +165,6 @@ export default function App() {
             taskBg = headerBg;
           } else {
             const activeIdx = sortedTasks.slice(0, idx).filter(t => !t.done).length;
-            // 🆕 От -5% до +25% — первая задача темнее базового
             const lightenPercent = activeTasksCount > 1
               ? -5 + (activeIdx / Math.max(1, activeTasksCount - 1)) * 30
               : -5;
@@ -181,6 +200,18 @@ export default function App() {
         </form>
       </div>
 
+      {/* Папки */}
+      <FolderSheet
+        isOpen={showFolders}
+        folders={folders}
+        activeFolderId={activeFolder.id}
+        onClose={() => setShowFolders(false)}
+        onSwitch={switchFolder}
+        onCreate={createFolder}
+        onDelete={deleteFolder}
+      />
+
+      {/* Напоминание */}
       <ReminderSheet
         isOpen={editingReminderId !== null}
         currentReminder={editingTask?.reminder}

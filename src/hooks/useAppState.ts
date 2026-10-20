@@ -1,38 +1,52 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Task } from '../types';
+import { Folder, Task } from '../types';
 import { cloudGetItem, cloudSetItem, isTelegram } from '../lib/telegram';
 
 export interface AppState {
-  version: 3;
-  tasks: Task[];
-  baseColor: string;
-  bgColor: string;
+  version: 4;
+  folders: Folder[];
+  activeFolderId: string;
 }
 
-const DEFAULT_STATE: AppState = {
-  version: 3,
+const DEFAULT_FOLDER: Folder = {
+  id: 'default',
+  name: 'Задачи',
+  baseColor: '#71717a',
+  bgColor: '#000000',
   tasks: [
     { id: 'tut-1', text: '👉 Свайпни вправо, чтобы выполнить', done: false },
     { id: 'tut-2', text: '👈 Свайпни влево, чтобы удалить', done: false },
     { id: 'tut-3', text: '👆 Нажми на текст, чтобы изменить', done: false },
     { id: 'tut-4', text: 'Это выполнено (свайп вправо)', done: true },
   ],
-  baseColor: '#71717a',
-  bgColor: '#000000',
 };
 
-const STORAGE_KEY = 'clear_app_state_v3';
-const CLOUD_KEY = 'clear_app_state_v3';
+const DEFAULT_STATE: AppState = {
+  version: 4,
+  folders: [DEFAULT_FOLDER],
+  activeFolderId: 'default',
+};
+
+const STORAGE_KEY = 'clear_app_state_v4';
+const CLOUD_KEY = 'clear_app_state_v4';
 
 function isValidState(state: any): state is AppState {
   try {
     if (!state || typeof state !== 'object') return false;
-    if (state.version !== 3) return false;
-    if (typeof state.baseColor !== 'string' || !state.baseColor.startsWith('#')) return false;
-    if (typeof state.bgColor !== 'string' || !state.bgColor.startsWith('#')) return false;
-    if (!Array.isArray(state.tasks)) return false;
-    return state.tasks.every(
-      (t: any) => t && typeof t.id === 'string' && typeof t.text === 'string' && typeof t.done === 'boolean'
+    if (state.version !== 4) return false;
+    if (!Array.isArray(state.folders)) return false;
+    if (typeof state.activeFolderId !== 'string') return false;
+    return state.folders.every(
+      (f: any) =>
+        f &&
+        typeof f.id === 'string' &&
+        typeof f.name === 'string' &&
+        typeof f.baseColor === 'string' &&
+        typeof f.bgColor === 'string' &&
+        Array.isArray(f.tasks) &&
+        f.tasks.every(
+          (t: any) => t && typeof t.id === 'string' && typeof t.text === 'string' && typeof t.done === 'boolean'
+        )
     );
   } catch {
     return false;
@@ -94,30 +108,69 @@ export function useAppState() {
     if (isTelegram) cloudSetItem(CLOUD_KEY, str).catch(() => {});
   }, [state, ready]);
 
-  const updateTasks = useCallback((updater: (tasks: Task[]) => Task[]) => {
+  // Получить текущую папку
+  const activeFolder = state.folders.find(f => f.id === state.activeFolderId) || state.folders[0];
+
+  const updateFolderTasks = useCallback((folderId: string, updater: (tasks: Task[]) => Task[]) => {
+    setState(prev => ({
+      ...prev,
+      folders: prev.folders.map(f =>
+        f.id === folderId ? { ...f, tasks: updater(f.tasks) } : f
+      ),
+    }));
+  }, []);
+
+  const setFolderColor = useCallback((folderId: string, key: 'baseColor' | 'bgColor', color: string) => {
+    setState(prev => ({
+      ...prev,
+      folders: prev.folders.map(f =>
+        f.id === folderId ? { ...f, [key]: color } : f
+      ),
+    }));
+  }, []);
+
+  const switchFolder = useCallback((folderId: string) => {
+    setState(prev => ({ ...prev, activeFolderId: folderId }));
+  }, []);
+
+  const createFolder = useCallback((name: string) => {
+    const id = Date.now().toString();
+    const newFolder: Folder = {
+      id,
+      name,
+      baseColor: '#71717a',
+      bgColor: '#000000',
+      tasks: [],
+    };
+    setState(prev => ({
+      ...prev,
+      folders: [...prev.folders, newFolder],
+      activeFolderId: id,
+    }));
+    return id;
+  }, []);
+
+  const deleteFolder = useCallback((folderId: string) => {
     setState(prev => {
-      try {
-        const newTasks = updater(prev.tasks);
-        if (!Array.isArray(newTasks)) return prev;
-        return { ...prev, tasks: newTasks };
-      } catch { return prev; }
+      const newFolders = prev.folders.filter(f => f.id !== folderId);
+      if (newFolders.length === 0) {
+        return { ...prev, folders: [DEFAULT_FOLDER], activeFolderId: 'default' };
+      }
+      return {
+        ...prev,
+        folders: newFolders,
+        activeFolderId: prev.activeFolderId === folderId ? newFolders[0].id : prev.activeFolderId,
+      };
     });
   }, []);
 
-  const setBaseColor = useCallback((color: string) => {
-    setState(prev => (typeof color === 'string' && color.startsWith('#') ? { ...prev, baseColor: color } : prev));
-  }, []);
-
-  const setBgColor = useCallback((color: string) => {
-    setState(prev => (typeof color === 'string' && color.startsWith('#') ? { ...prev, bgColor: color } : prev));
-  }, []);
-
   return {
-    tasks: state.tasks,
-    baseColor: state.baseColor,
-    bgColor: state.bgColor,
-    updateTasks,
-    setBaseColor,
-    setBgColor,
+    folders: state.folders,
+    activeFolder,
+    updateFolderTasks,
+    setFolderColor,
+    switchFolder,
+    createFolder,
+    deleteFolder,
   };
 }
