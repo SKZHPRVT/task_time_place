@@ -92,17 +92,15 @@ export function FolderSheet({ isOpen, folders, activeFolderId, onClose, onSwitch
                         <Check size={16} className={`inline ml-2 ${light ? 'text-green-700' : 'text-green-400'}`} />
                       )}
                     </button>
-                    {folders.length > 1 && (
-                      <button
-                        onClick={() => {
-                          onDelete(folder.id);
-                          haptic('heavy');
-                        }}
-                        className="p-2 active:opacity-50"
-                      >
-                        <X size={18} className={light ? 'text-red-700' : 'text-red-400'} />
-                      </button>
-                    )}
+                    <button
+                      onClick={() => {
+                        onDelete(folder.id);
+                        haptic('heavy');
+                      }}
+                      className="p-2 active:opacity-50"
+                    >
+                      <X size={18} className={light ? 'text-red-700' : 'text-red-400'} />
+                    </button>
                   </div>
                 );
               })}

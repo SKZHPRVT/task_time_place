@@ -8,7 +8,7 @@ export interface AppState {
   activeFolderId: string;
 }
 
-const DEFAULT_FOLDER: Folder = {
+const makeDefaultFolder = (): Folder => ({
   id: 'default',
   name: 'Задачи',
   baseColor: '#71717a',
@@ -19,11 +19,11 @@ const DEFAULT_FOLDER: Folder = {
     { id: 'tut-3', text: '👆 Тап по тексту — изменить', done: false },
     { id: 'tut-4', text: '📁 Тап по шапке — создать папку', done: false },
   ],
-};
+});
 
 const DEFAULT_STATE: AppState = {
   version: 4,
-  folders: [DEFAULT_FOLDER],
+  folders: [makeDefaultFolder()],
   activeFolderId: 'default',
 };
 
@@ -152,9 +152,17 @@ export function useAppState() {
   const deleteFolder = useCallback((folderId: string) => {
     setState(prev => {
       const newFolders = prev.folders.filter(f => f.id !== folderId);
+
+      // Если удалили последнюю — создаём дефолтную с туториалом
       if (newFolders.length === 0) {
-        return { ...prev, folders: [DEFAULT_FOLDER], activeFolderId: 'default' };
+        const defaultFolder = makeDefaultFolder();
+        return {
+          ...prev,
+          folders: [defaultFolder],
+          activeFolderId: defaultFolder.id,
+        };
       }
+
       return {
         ...prev,
         folders: newFolders,
