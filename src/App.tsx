@@ -64,8 +64,8 @@ export default function App() {
 
   useReminderChecker(activeFolder.tasks, handleReminderTriggered);
 
-  const addTask = (e: React.FormEvent) => {
-    e.preventDefault();
+  // 🆕 Функция создания задачи — используется и в форме, и в blur
+  const commitNewTask = () => {
     if (!newTaskText.trim()) return;
     const newTask: Task = {
       id: Date.now().toString(),
@@ -74,13 +74,27 @@ export default function App() {
     };
     updateFolderTasks(activeFolder.id, prev => [newTask, ...prev]);
     setNewTaskText('');
-    setEditingTaskId(null);
   };
 
-  // 🆕 Обработчик тапа по пустому месту — фокусируем поле "+ Новая задача"
-  const handleEmptyTap = () => {
-    haptic('light');
-    inputRef.current?.focus();
+  const addTask = (e: React.FormEvent) => {
+    e.preventDefault();
+    commitNewTask();
+    inputRef.current?.blur(); // снимаем фокус после Enter
+  };
+
+  // 🆕 При потере фокуса — если есть текст, создаём задачу
+  const handleBlur = () => {
+    if (newTaskText.trim()) {
+      commitNewTask();
+    }
+  };
+
+  // 🆕 При тапе на шапку/пустое место — фиксируем задачу и убираем клавиатуру
+  const handleOutsideTap = () => {
+    if (newTaskText.trim()) {
+      commitNewTask();
+    }
+    inputRef.current?.blur();
   };
 
   const sortedTasks = useMemo(() => {
@@ -106,8 +120,12 @@ export default function App() {
         className="pb-4 px-6 transition-colors duration-300 flex justify-between items-center shrink-0 gap-2"
         style={{ backgroundColor: headerBg }}
       >
+        {/* Кнопка открытия папок — сначала фиксируем ввод */}
         <button
-          onClick={() => setShowFolders(true)}
+          onClick={() => {
+            handleOutsideTap();
+            setShowFolders(true);
+          }}
           className="min-w-0 flex-1 text-left active:opacity-60 transition-opacity"
         >
           <h1
@@ -119,7 +137,10 @@ export default function App() {
         </button>
 
         <button
-          onClick={() => setShowPalette(!showPalette)}
+          onClick={() => {
+            handleOutsideTap();
+            setShowPalette(!showPalette);
+          }}
           className="p-2 rounded-full active:bg-white/20 transition-colors shrink-0 mt-1"
         >
           <Palette size={24} className="text-white/80" />
@@ -169,7 +190,6 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Скролл-контейнер с задачами */}
       <div className="flex-1 overflow-y-auto pb-24" style={{ backgroundColor: bgColor }}>
         {sortedTasks.map((task, idx) => {
           let taskBg: string;
@@ -207,19 +227,21 @@ export default function App() {
             type="text"
             value={newTaskText}
             onChange={e => setNewTaskText(e.target.value)}
+            onBlur={handleBlur}
             placeholder="+ Новая задача"
             className={`w-full bg-transparent text-xl outline-none ${
               bgIsLight ? 'text-zinc-700 placeholder-zinc-500' : 'text-zinc-400 placeholder-zinc-600'
             }`}
+            enterKeyHint="done"
           />
         </form>
 
-        {/* 🆕 Пустая кликабельная область — тап создаёт задачу */}
+        {/* Пустая область — фиксирует ввод и убирает фокус */}
         <div
-          onClick={handleEmptyTap}
-          className="flex-1 min-h-[50vh] cursor-pointer"
-          style={{ touchAction: 'manipulation' }}
-          aria-label="Создать задачу"
+          onClick={() => {
+            handleOutsideTap();
+          }}
+          className="min-h-[50vh] cursor-pointer"
         />
       </div>
 
