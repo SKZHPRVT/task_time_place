@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion, useAnimation, PanInfo } from 'framer-motion';
+import { motion, useAnimation, useDragControls, PanInfo, Reorder } from 'framer-motion';
 import { Bell, Check, X } from 'lucide-react';
 import { Task } from '../types';
 import { haptic } from '../lib/telegram';
@@ -12,8 +12,6 @@ interface SwipeableTaskProps {
   onOpenReminder?: (id: string) => void;
   taskBg?: string;
   textColor?: string;
-  isEditingExternal?: boolean;
-  onEditingDone?: () => void;
 }
 
 export function SwipeableTask({
@@ -24,18 +22,12 @@ export function SwipeableTask({
   onOpenReminder,
   taskBg,
   textColor = 'text-white',
-  isEditingExternal,
-  onEditingDone,
 }: SwipeableTaskProps) {
   const [isEditing, setIsEditing] = useState(false);
   const controls = useAnimation();
+  const dragControls = useDragControls();
   const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (isEditingExternal) {
-      setIsEditing(true);
-    }
-  }, [isEditingExternal]);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -52,10 +44,29 @@ export function SwipeableTask({
       controls.start({ x: 0, transition: { type: 'spring', stiffness: 300, damping: 25 } });
     } else if (info.offset.x < -threshold) {
       haptic('heavy');
-      // 🆕 НЕ ждём анимацию — AnimatePresence в родителе сделает exit
       onDelete(task.id);
     } else {
       controls.start({ x: 0, transition: { type: 'spring', stiffness: 300, damping: 25 } });
+    }
+  };
+
+  // 🆕 Long press → запуск drag для reorder
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (isEditing) return;
+    // Не активируем long press при тапе на кнопку напоминания
+    const target = e.target as HTMLElement;
+    if (target.closest('button')) return;
+
+    longPressTimer.current = setTimeout(() => {
+      haptic('medium');
+      dragControls.start(e);
+    }, 300);
+  };
+
+  const handlePointerUp = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
     }
   };
 
@@ -63,7 +74,14 @@ export function SwipeableTask({
   const hasReminder = Boolean(task.reminder);
 
   return (
-    <div className="relative overflow-hidden w-full" style={{ backgroundColor: '#000' }}>
+    <Reorder.Item
+      value={task}
+      dragListener={false}
+      dragControls={dragControls}
+      style={{ backgroundColor: bgColor }}
+      className="relative flex items-start px-3 py-4 border-b border-black/10 w-full overflow-hidden"
+    >
+      {/* Фоны при свайпе */}
       <div className="absolute inset-0 flex justify-between items-center">
         <div className="pl-2 h-full flex items-center">
           <Check size={28} className="text-green-500" strokeWidth={3} />
@@ -79,8 +97,10 @@ export function SwipeableTask({
         dragElastic={0.2}
         onDragEnd={handleDragEnd}
         animate={controls}
-        style={{ backgroundColor: bgColor }}
-        className="relative flex items-start px-3 py-4 border-b border-black/10 w-full"
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        className="relative flex items-start w-full z-10"
       >
         <div className="flex-1 min-w-0 mr-3">
           {isEditing ? (
@@ -90,7 +110,6 @@ export function SwipeableTask({
               defaultValue={task.text}
               onBlur={e => {
                 setIsEditing(false);
-                onEditingDone?.();
                 onUpdate(task.id, e.target.value);
               }}
               onKeyDown={e => {
@@ -135,7 +154,7 @@ export function SwipeableTask({
           />
         </button>
       </motion.div>
-    </div>
+    </Reorder.Item>
   );
 }
 

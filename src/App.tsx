@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { Reorder } from 'framer-motion';
 import { SwipeableTask } from './components/SwipeableTask';
 import { ReminderSheet } from './components/ReminderSheet';
 import { FolderSheet } from './components/FolderSheet';
@@ -26,10 +27,9 @@ export default function App() {
   const [paletteMode, setPaletteMode] = useState<'base' | 'bg'>('base');
   const [newTaskText, setNewTaskText] = useState('');
   const [editingReminderId, setEditingReminderId] = useState<string | null>(null);
-  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
-  const textRef = useRef(''); // 🆕 Синхронное зеркало newTaskText
+  const textRef = useRef('');
 
   const baseColor = activeFolder.baseColor;
   const bgColor = activeFolder.bgColor;
@@ -42,8 +42,15 @@ export default function App() {
     setHeaderColor(headerBg);
   }, [headerBg]);
 
+  // 🆕 Возврат в начало + выполненные вниз
   const toggleTask = (id: string) => {
-    updateFolderTasks(activeFolder.id, prev => prev.map(t => (t.id === id ? { ...t, done: !t.done } : t)));
+    updateFolderTasks(activeFolder.id, prev => {
+      const target = prev.find(t => t.id === id);
+      if (!target) return prev;
+      const updated = { ...target, done: !target.done };
+      const others = prev.filter(t => t.id !== id);
+      return updated.done ? [...others, updated] : [updated, ...others];
+    });
   };
 
   const deleteTask = (id: string) => {
@@ -64,36 +71,23 @@ export default function App() {
 
   useReminderChecker(activeFolder.tasks, handleReminderTriggered);
 
-  // 🆕 Берём текст из ref (синхронно), а не из state
   const commitNewTask = () => {
     const trimmed = textRef.current.trim();
     if (!trimmed) return;
-
-    // Сразу обнуляем ref — второй вызов в том же тике увидит пустоту
     textRef.current = '';
-
     const newTask: Task = {
       id: `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
       text: trimmed,
       done: false,
     };
-
     setNewTaskText('');
     inputRef.current?.blur();
-    // 🆕 В конец списка (под предыдущими)
     updateFolderTasks(activeFolder.id, prev => [...prev, newTask]);
   };
 
   const addTask = (e: React.FormEvent) => {
     e.preventDefault();
     commitNewTask();
-  };
-
-  // 🆕 При потере фокуса (тап по другой задаче) — создаём таск
-  const handleBlur = () => {
-    if (textRef.current.trim()) {
-      commitNewTask();
-    }
   };
 
   const handleEmptyTap = () => {
@@ -113,22 +107,30 @@ export default function App() {
     action();
   };
 
+  // 🆕 Сортировка: активные сверху (в порядке как в массиве), выполненные — внизу
   const sortedTasks = useMemo(() => {
-    return [...activeFolder.tasks].sort((a, b) => {
-      if (a.done === b.done) return 0;
-      return a.done ? 1 : -1;
-    });
+    const active = activeFolder.tasks.filter(t => !t.done);
+    const done = activeFolder.tasks.filter(t => t.done);
+    return [...active, ...done];
   }, [activeFolder.tasks]);
 
-  const editingTask = editingReminderId ? activeFolder.tasks.find(t => t.id === editingReminderId) : null;
+  // 🆕 Обработчик reorder — применяем только к активным (done отфильтрованы)
+  const handleReorder = (newActiveOrder: Task[]) => {
+    const doneTasks = activeFolder.tasks.filter(t => t.done);
+    updateFolderTasks(activeFolder.id, () => [...newActiveOrder, ...doneTasks]);
+  };
 
+  const editingTask = editingReminderId ? activeFolder.tasks.find(t => t.id === editingReminderId) : null;
   const handlePaletteSelect = (hex: string) => {
     setFolderColor(activeFolder.id, paletteMode === 'base' ? 'baseColor' : 'bgColor', hex);
   };
 
   const currentColor = paletteMode === 'base' ? baseColor : bgColor;
   const bgIsLight = isLightColor(bgColor);
-  const activeTasksCount = sortedTasks.filter(t => !t.done).length;
+
+  const activeTasks = sortedTasks.filter(t => !t.done);
+  const doneTasks = sortedTasks.filter(t => t.done);
+  const activeTasksCount = activeTasks.length;
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden" style={{ backgroundColor: bgColor }}>
@@ -211,47 +213,51 @@ export default function App() {
       </AnimatePresence>
 
       <div className="flex-1 overflow-y-auto pb-24" style={{ backgroundColor: bgColor }}>
-        <AnimatePresence initial={false}>
-          {sortedTasks.map((task, idx) => {
-            let taskBg: string;
-            if (task.done) {
-              taskBg = headerBg;
-            } else {
-              const activeIdx = sortedTasks.slice(0, idx).filter(t => !t.done).length;
-              const lightenPercent = activeTasksCount > 1
-                ? -5 + (activeIdx / Math.max(1, activeTasksCount - 1)) * 30
-                : -5;
-              taskBg = lightenPercent >= 0
-                ? lightenColor(baseColor, lightenPercent)
-                : darkenColor(baseColor, Math.abs(lightenPercent));
-            }
+        {/* 🆕 Активные задачи — Reorder.Group для перетаскивания */}
+        <Reorder.Group
+          axis="y"
+          values={activeTasks}
+          onReorder={handleReorder}
+          className="list-none p-0 m-0"
+        >
+          {activeTasks.map((task, idx) => {
+            const lightenPercent = activeTasksCount > 1
+              ? -5 + (idx / Math.max(1, activeTasksCount - 1)) * 30
+              : -5;
+            const taskBg = lightenPercent >= 0
+              ? lightenColor(baseColor, lightenPercent)
+              : darkenColor(baseColor, Math.abs(lightenPercent));
 
             return (
-              <motion.div
+              <SwipeableTask
                 key={task.id}
-                layout
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <SwipeableTask
-                  task={task}
-                  onToggle={toggleTask}
-                  onDelete={deleteTask}
-                  onUpdate={updateTask}
-                  onOpenReminder={setEditingReminderId}
-                  taskBg={taskBg}
-                  textColor={taskTextColor}
-                  isEditingExternal={editingTaskId === task.id}
-                  onEditingDone={() => setEditingTaskId(null)}
-                />
-              </motion.div>
+                task={task}
+                onToggle={toggleTask}
+                onDelete={deleteTask}
+                onUpdate={updateTask}
+                onOpenReminder={setEditingReminderId}
+                taskBg={taskBg}
+                textColor={taskTextColor}
+              />
             );
           })}
-        </AnimatePresence>
+        </Reorder.Group>
 
-        <form onSubmit={addTask} className="px-6 py-4 relative z-20">
+        {/* 🆕 Выполненные — просто список без reorder, внизу */}
+        {doneTasks.map(task => (
+          <SwipeableTask
+            key={task.id}
+            task={task}
+            onToggle={toggleTask}
+            onDelete={deleteTask}
+            onUpdate={updateTask}
+            onOpenReminder={setEditingReminderId}
+            taskBg={headerBg}
+            textColor={taskTextColor}
+          />
+        ))}
+
+        <form onSubmit={addTask} className="px-6 py-4">
           <input
             ref={inputRef}
             type="text"
@@ -260,7 +266,11 @@ export default function App() {
               setNewTaskText(e.target.value);
               textRef.current = e.target.value;
             }}
-            onBlur={handleBlur}
+            onBlur={() => {
+              if (textRef.current.trim()) {
+                commitNewTask();
+              }
+            }}
             placeholder="+ Новая задача"
             className={`w-full bg-transparent text-xl outline-none ${
               bgIsLight ? 'text-zinc-700 placeholder-zinc-500' : 'text-zinc-400 placeholder-zinc-600'
@@ -293,7 +303,7 @@ export default function App() {
         onRemove={() => editingReminderId && setReminder(editingReminderId, undefined)}
       />
 
-      {/* 🆕 Оверлей: пока есть текст в поле — любой тап только подтверждает создание */}
+      {/* Оверлей при вводе */}
       {newTaskText.trim().length > 0 && (
         <div
           onClick={() => {
